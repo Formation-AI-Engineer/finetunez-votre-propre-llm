@@ -51,7 +51,7 @@ Ce qui ne peut pas être fait à votre place. Le reste de la fiche est à réali
 - [x] CI GitHub Actions : ruff et pytest (`.github/workflows/ci.yml`)
 - [x] Hyperparamètres de départ : `configs/sft.yaml`, `configs/dpo.yaml`
 - [x] Dépôt distant GitHub configuré (`origin`)
-- [ ] Premier commit et premier envoi vers GitHub
+- [x] Premier commit et premier envoi vers GitHub (`main` et `dev`)
 - [ ] Comptes et jetons : Hugging Face, Weights & Biases, fournisseur GPU
 
 ---
