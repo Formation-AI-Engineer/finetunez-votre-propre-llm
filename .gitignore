@@ -1,0 +1,31 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Données : versionnées sur le Hub Hugging Face, pas dans Git
+data/raw/*
+data/interim/*
+data/processed/*
+!data/**/.gitkeep
+
+# Entraînement : poids, checkpoints et journaux (W&B, adaptateurs sur le Hub)
+outputs/
+models/
+wandb/
+*.safetensors
+
+# Archive à déposer (générée)
+livrables/*
+!livrables/.gitkeep
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
