@@ -21,12 +21,20 @@ Contrôle : <http://localhost:8000/api/v1/healthcheck>
 Selon l'étape : `uv sync --extra data` (préparation des données) ou `uv sync --extra train`
 (entraînement, sur une machine GPU).
 
+Construire le dataset (voir [docs/DONNEES.md](docs/DONNEES.md)) :
+
+```bash
+uv run --extra data python scripts/download_data.py
+uv run --extra data python scripts/build_dataset.py
+uv run --extra data python scripts/audit_anonymization.py
+```
+
 ## Organisation
 
 | Dossier | Contenu |
 |---|---|
 | `src/triage/` | Code du projet (données, entraînement, API) |
-| `configs/` | Hyperparamètres SFT et DPO |
+| `configs/` | Hyperparamètres SFT et DPO, tableau FRENCH, vignettes, liste d'exclusion |
 | `data/` | Données locales, non versionnées dans Git (dataset publié sur le Hub) |
 | `scripts/`, `notebooks/` | Lancement des traitements, exploration |
 | `tests/` | Tests pytest |
@@ -38,3 +46,5 @@ Selon l'étape : `uv sync --extra data` (préparation des données) ou `uv sync 
 - [Fiche de tâches par étape](docs/TACHES.md)
 - [Notions clés à savoir](docs/NOTIONS_CLES.md)
 - [Point mentor : écarts de l'énoncé et questions](docs/POINT_MENTOR.md)
+- [Données : inventaire, schéma, construction](docs/DONNEES.md)
+- [Données de santé et RGPD](docs/RGPD.md)

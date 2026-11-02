@@ -227,8 +227,10 @@ jetons par seconde, requêtes simultanées, mémoire GPU, coût par heure.
 motif de recours : tri 1, 2, 3A, 3B, 4, 5. La table associe à chaque motif un niveau de base (colonne
 « Tri M », selon ma lecture) et des critères qui le modulent.
 
-Exemple tiré du référentiel, dyspnée : détresse respiratoire, FR ≥ 40/min ou SpO2 < 86 % → tri 2 ;
-dyspnée à la parole, tirage, orthopnée, FR 30-40/min ou SpO2 86-90 % → tri 3A.
+Exemple tiré du référentiel, dyspnée (tri M 3B) : détresse respiratoire, FR ≥ 40/min ou SpO2 < 86 %
+→ tri 1 ; dyspnée à la parole, tirage, orthopnée, FR 30-40/min ou SpO2 86-90 % → tri 2. Les colonnes
+ont été vérifiées par la position du texte dans le PDF (une version précédente de cette fiche indiquait
+à tort tri 2 et tri 3A).
 
 Vérifiez le niveau exact et les délais cibles dans le référentiel officiel : je ne les ai pas
 trouvés dans le fichier consulté.

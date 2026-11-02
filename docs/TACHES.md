@@ -80,26 +80,28 @@ Plus rien ne bloque l'étape 1.
 **À la fin :** dataset anonymisé, versionné, avec schéma de métadonnées et justification RGPD.
 
 ### Inventaire et collecte
-- [ ] Inventaire des sources : origine, licence, langue, volume (`docs/DONNEES.md`)
-- [ ] Trancher la source FrenchMedMCQA et vérifier la licence de MedQuAD (voir point mentor)
-- [ ] Script de téléchargement avec révision Hub épinglée pour chaque source
-- [ ] UltraMedical : charger chaque fichier séparément (`data/train.json`, `dev.json`, `test.json`),
+- [x] Inventaire des sources : origine, licence, langue, volume (`docs/DONNEES.md`)
+- [x] Trancher la source FrenchMedMCQA (`qanastek`, Apache 2.0) et vérifier la licence de MedQuAD
+      (CC BY 4.0 dans le dépôt d'origine, utilisé à la place du miroir HF)
+- [x] Script de téléchargement avec révision épinglée pour chaque source (`scripts/download_data.py`)
+- [x] UltraMedical : charger chaque fichier séparément (`data/train.json`, `dev.json`, `test.json`),
       car `test.json` n'a pas la colonne `feedback` et casse le chargement global
 
 ### Schéma et normalisation
-- [ ] Schéma pydantic des métadonnées : symptômes, antécédents, constantes, source, langue,
+- [x] Schéma pydantic des métadonnées : symptômes, antécédents, constantes, source, langue,
       licence, niveau de confiance, identifiant d'origine
-- [ ] Format SFT conversationnel `prompt` / `completion`, format DPO `prompt` / `chosen` / `rejected`
-- [ ] Convertir les QCM (`correct_answers`) en réponses rédigées, avec la justification si disponible
-- [ ] Sortir la question de `chosen` et `rejected` dans UltraMedical (le prompt y est répété)
-- [ ] Filtrer : réponses vides ou trop longues (MedQuAD va jusqu'à ~29 000 caractères), doublons
+- [x] Format SFT conversationnel `prompt` / `completion`, format DPO `prompt` / `chosen` / `rejected`
+- [x] Convertir les QCM (`correct_answers`) en réponses rédigées (aucune source ne fournit de
+      justification)
+- [x] Sortir la question de `chosen` et `rejected` dans UltraMedical (le prompt y est répété)
+- [x] Filtrer : réponses vides ou trop longues (MedQuAD va jusqu'à ~29 000 caractères), doublons
 
 ### Jeu de triage **(ajout)**
-- [ ] Générer des vignettes FR à partir du référentiel FRENCH : motif, constantes, antécédents,
+- [x] Générer des vignettes FR à partir du référentiel FRENCH : motif, constantes, antécédents,
       niveau attendu et justification
-- [ ] Table de correspondance vers les 3 niveaux : tri 1-2 → maximale, 3A-3B → modérée,
+- [x] Table de correspondance vers les 3 niveaux : tri 1-2 → maximale, 3A-3B → modérée,
       4-5 → différée (à faire valider)
-- [ ] Marquer ces données `synthetic` et ne jamais les présenter comme validées cliniquement
+- [x] Marquer ces données `synthetic` et ne jamais les présenter comme validées cliniquement
 
 ### Composition cible (à ajuster selon la qualité observée)
 
@@ -113,23 +115,26 @@ Plus rien ne bloque l'étape 1.
 | DPO | Paires de triage FR : bon niveau / sous-triage **(ajout)** | ~300 | FR |
 
 ### Anonymisation et RGPD
-- [ ] Moteurs Presidio FR (`fr_core_news_md`) et EN (`en_core_web_md`), entités personne, dates,
+- [x] Moteurs Presidio FR (`fr_core_news_md`) et EN (`en_core_web_md`), entités personne, dates,
       téléphones, adresses
-- [ ] Liste d'exclusion des éponymes : testé ici, Presidio masque « Parkinson » et
+- [x] Liste d'exclusion des éponymes : testé ici, Presidio masque « Parkinson » et
       « Guillain-Barré » comme des personnes
-- [ ] Comparer les stratégies `replace`, `mask`, `redact` et justifier le choix
-- [ ] Priorité sur UltraMedical : sa partie ChatDoctor contient de vrais messages de patients
-- [ ] Contrôle qualité : échantillon relu à la main, faux négatifs et faux positifs mesurés
-- [ ] Rédiger la justification RGPD : base légale, minimisation, traçabilité (`docs/RGPD.md`)
+- [x] Comparer les stratégies `replace`, `mask`, `redact` et justifier le choix (`replace`)
+- [x] Priorité sur UltraMedical : sa partie ChatDoctor contient de vrais messages de patients
+- [x] Contrôle qualité : faux négatifs et faux positifs mesurés sur un corpus annoté
+- [x] Relire les entités détectées sur des échantillons réels (ChatDoctor, MediQAl, MedQuAD) :
+      précision et rappel d'environ 80 % sur les noms, limite documentée dans `docs/RGPD.md`
+- [x] Rédiger la justification RGPD : base légale, minimisation, traçabilité (`docs/RGPD.md`)
 
 ### Découpage et publication
-- [ ] Train / val / test sans fuite : garder les tests officiels, dédoublonner **entre** sources
+- [x] Train / val / test sans fuite : garder les tests officiels, dédoublonner **entre** sources
       (UltraMedical reprend MedQuAD et d'autres corpus)
-- [ ] Jeux d'évaluation séparés : connaissances FR, préférence EN (777 exemples de test, dont 163
+- [x] Jeux d'évaluation séparés : connaissances FR, préférence EN (777 exemples de test, dont 163
       annotés par des humains), triage et sécurité (~200 vignettes jamais vues)
-- [ ] Journal de chaque transformation : entrée, sortie, comptages, empreinte
-- [ ] Carte du dataset et dépôt Hugging Face en privé (publication à décider ensuite)
-- [ ] Tests pytest : schéma, absence de fuite entre jeux, anonymisation
+- [x] Journal de chaque transformation : entrée, sortie, comptages, empreinte
+- [x] Carte du dataset (`scripts/dataset_card.md`) et script de dépôt privé (`scripts/publish_dataset.py`)
+- [x] Déposer le dataset sur Hugging Face en privé : `lcamara/triage-chsa` (publication à décider ensuite)
+- [x] Tests pytest : schéma, règles, vignettes, absence de fuite entre jeux, anonymisation
 
 ---
 
