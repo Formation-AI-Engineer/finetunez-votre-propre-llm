@@ -8,7 +8,7 @@ Fiche de révision pour la mission et la soutenance. À compléter au fil des é
 |---|---|---|
 | Post-training 101 (Tokens for Thoughts) | Lu en entier, sauf ses tableaux et figures | Haute : sections 1 à 3, DPO et GRPO, section 5 |
 | Documentation TRL, DPO Trainer | Lue | Haute, au moment de l'étape 3 |
-| Cours Hugging Face « Fine-tune LLMs » | Sommaire seul, à confirmer comme bon cours | Moyenne : chat templates et LoRA |
+| Cours Hugging Face, chapitre 11 « Fine-tune LLMs » | Lu (sections 1 à 6). À confirmer comme cours visé par l'énoncé | Moyenne : SFT (lecture des courbes) et LoRA |
 | Article JAMA Network Open (Goh et al., 2024) | Lu | Faible : le résumé ci-dessous suffit |
 | Référentiel FRENCH (SFMU, v1.1, 2018) | Lu | Moyenne : pour construire les vignettes |
 | Cours « Enjeux de l'IA générative pour un citoyen européen » | **Pas lu, page réservée aux inscrits** | Section 8 à recouper avec le cours |
@@ -45,7 +45,40 @@ $$\mathcal{L}_{SFT}(\theta) = -\frac{1}{T}\sum_{t=1}^{T}\log p_\theta(y_t^* \mid
 ```
 
 **Chat template** — Convertit les messages en texte avec les jetons spéciaux du modèle. Un mauvais
-rendu fausse tout l'entraînement sans provoquer d'erreur : à contrôler en premier.
+rendu fausse tout l'entraînement sans provoquer d'erreur : à contrôler en premier, avec
+`tokenizer.apply_chat_template(messages, tokenize=False)`. Qwen utilise le format ChatML
+(`<|im_start|>rôle … <|im_end|>`). `Qwen3-1.7B-Base` fournit déjà ce template dans son tokenizer : inutile
+d'appeler `setup_chat_format`, montré dans le cours Hugging Face pour un modèle qui n'en a pas. Si le
+dataset a une colonne `messages` (ou `prompt` / `completion`), `SFTTrainer` applique le template tout
+seul.
+
+**Quand faire un SFT** (cours Hugging Face) — Après avoir essayé le prompting d'un modèle instruit,
+car le SFT coûte cher. Il se justifie pour imposer un format de sortie strict, pour un domaine que les
+modèles maîtrisent mal, ou pour remplacer un grand modèle par un petit modèle spécialisé. C'est
+exactement l'argument du POC : un 1,7B spécialisé au lieu d'un grand modèle généraliste.
+
+**Hyperparamètres à connaître**
+
+| Paramètre | Rôle |
+|---|---|
+| `num_train_epochs` ou `max_steps` | Durée de l'entraînement (le cours conseille 1 à 3 époques) |
+| `per_device_train_batch_size` | Taille du lot par GPU : mémoire contre stabilité |
+| `gradient_accumulation_steps` | Additionne les gradients de plusieurs petits lots : grand lot effectif sans plus de mémoire |
+| `learning_rate`, `warmup_ratio` | Taille des pas, et montée progressive au début |
+| `logging_steps`, `eval_steps`, `save_steps` | Fréquence des journaux, des évaluations et des checkpoints |
+| `packing` | Concatène les exemples courts. Avec `max_steps`, le nombre réel d'époques change |
+
+**Lire les courbes de perte**
+
+| Ce qu'on voit | Diagnostic | Que faire |
+|---|---|---|
+| Chute rapide, puis plateau, écart faible entre train et validation | Sain | Rien |
+| La perte de validation remonte pendant que celle du train baisse | Sur-apprentissage | Moins d'étapes, plus de données, données plus variées |
+| Aucune baisse notable | Sous-apprentissage | Taux d'apprentissage trop faible, tâche mal posée |
+| Perte du train très basse, mauvaises réponses sur des cas nouveaux | Mémorisation | Comme le sur-apprentissage |
+| Format de sortie incohérent | Problème de template | Vérifier le rendu du template |
+
+Une bonne perte ne suffit pas : lisez régulièrement des réponses générées.
 
 **Jeton de fin** — Il doit figurer dans la cible. Sinon, le modèle ne sait pas s'arrêter.
 
@@ -75,15 +108,26 @@ et le temps de calcul baissent nettement.
 
 | Paramètre | Rôle | Point d'attention |
 |---|---|---|
-| `r` | Rang, donc capacité de l'adaptateur | Trop bas : sous-apprentissage. Trop haut : sur-apprentissage |
-| `lora_alpha` | Échelle de la mise à jour (`alpha / r`) | Souvent le double de `r` |
-| `target_modules` | Couches modifiées | Pour Qwen3 : `q_proj`, `k_proj`, `v_proj`, `o_proj` |
-| `lora_dropout` | Régularisation | Utile sur un petit dataset |
+| `r` | Rang, donc capacité de l'adaptateur | Le cours conseille 4 à 32, en commençant par 4-8 |
+| `lora_alpha` | Échelle de la mise à jour (`alpha / r`) | Environ le double de `r` |
+| `target_modules` | Couches modifiées | Attention seule (`q_proj`, `k_proj`, `v_proj`, `o_proj`) ou `"all-linear"` : plus adaptable, plus de mémoire |
+| `lora_dropout` | Régularisation | 0,05 à 0,1 |
+| `bias` | Entraîne ou non les biais | `"none"`, le plus courant |
 
-**Adaptateur ou fusion** — Un adaptateur est léger et s'échange facilement. Un modèle fusionné
-(`merge_and_unload`) se sert plus simplement. vLLM accepte les deux (`--enable-lora`,
-`--lora-modules`, `--max-lora-rank`). Le projet retient la fusion, puisque les poids finaux sont un
-livrable.
+`configs/sft.yaml` part de `r=16` sur l'attention seule : un rang plus bas et `"all-linear"` sont à
+comparer lors des petits runs.
+
+**QLoRA** — LoRA sur un modèle de base chargé en 4 bits : encore moins de mémoire. Inutile a priori pour
+un modèle de 1,7B sur un GPU de 16 Go.
+
+**Adaptateur ou fusion** — Un adaptateur est léger et s'échange facilement : PEFT permet d'en charger
+plusieurs et de basculer de l'un à l'autre (`load_adapter`, `set_adapter`), pratique pour comparer
+SFT et SFT + DPO. Un modèle fusionné (`merge_and_unload`) se sert plus simplement et sans latence
+supplémentaire. vLLM accepte les deux (`--enable-lora`, `--lora-modules`, `--max-lora-rank`). Le projet
+retient la fusion, puisque les poids finaux sont un livrable.
+
+Pour fusionner : garder la même précision qu'à l'entraînement, prévoir assez de mémoire pour charger
+le modèle de base, et sauvegarder le tokenizer avec le modèle fusionné.
 
 **Ordre de grandeur** — 1,7 milliard de paramètres en BF16 (2 octets) : environ 3,4 Go pour les seuls
 poids. Le pic réel se mesure pendant le premier run.
@@ -149,6 +193,19 @@ déjà. La mission demande le DPO ; l'étape 2 cite aussi le GRPO, traité comme
 
 **Agrégats** — Net win rate : $(W-L)/(W+L)$, de −1 à +1. Elo : le classement tient compte du niveau de
 l'adversaire.
+
+**Benchmarks standards** (cours Hugging Face) — Ils donnent une base de comparaison reproductible,
+mais un bon score académique ne garantit pas l'efficacité sur le métier. MMLU (57 matières) a des
+sous-tâches médicales : `anatomy`, `professional_medicine`, etc. LightEval les lance, par exemple
+`mmlu|professional_medicine|0|0` en zero-shot. Utile ici pour vérifier que le SFT n'a pas détruit les
+connaissances générales.
+
+**Évaluation propre au domaine** — Le cours insiste : les benchmarks ne suffisent pas. Il faut un jeu
+construit sur les vrais usages et les cas limites, plus une revue humaine ou experte. C'est le rôle du
+jeu de vignettes de triage.
+
+**Taille d'échantillon** — Avec 40 exemples par tâche, l'écart-type atteint ±0,12 dans l'exemple du
+cours : un écart de quelques points peut venir du hasard. Donnez toujours l'effectif et l'incertitude.
 
 **Contamination** — Une donnée de test présente dans le train fausse les résultats. C'est un vrai risque
 ici : UltraMedical reprend notamment MedQuAD. Il faut dédoublonner entre sources.
@@ -253,17 +310,51 @@ gestion des risques, documentation, journalisation, contrôle humain.
 | Quelle valeur clinique ? | Taux de sous-triage et temps de recueil. Sans essai réel, le POC ne prouve qu'un potentiel |
 | Que manque-t-il pour la production ? | Validation clinique, HDS, conformité AI Act et dispositif médical, intégration au SI, surveillance |
 
-## Erreurs à ne pas reprendre du cours Post-training 101
+## Corrections du cours Post-training 101
 
-- Les logits passent par un **softmax** (le texte dit « sigmoid »).
-- Dans l'astuce log-sum-exp, $m = \max_v z_{t,v}$ (le texte écrit $\max \exp(z)$).
-- Un net win rate de **−1** signifie que le modèle perd toujours (le texte affiche « 1.0 »).
+Le cours contient trois erreurs. Voici les versions correctes, à retenir pour la soutenance.
+
+**1. Les logits passent par un softmax, pas par une sigmoïde.**
+
+Le cours parle de la sortie de la dernière couche « avant la sigmoïde ». La distribution sur le
+vocabulaire s'obtient par un **softmax** (la sigmoïde ne sert que pour deux classes, comme dans la perte
+DPO) :
+
+$$p_\theta(y_t^* \mid x, y_{<t}) = \frac{\exp(z_{t,y_t^*})}{\sum_{v=1}^{V}\exp(z_{t,v})}$$
+
+**2. Dans l'astuce log-sum-exp, on soustrait le plus grand logit, pas le plus grand exponentiel.**
+
+Le cours écrit $m = \max_v \exp(z_{t,v})$. Il faut :
+
+$$m = \max_{v} z_{t,v} \qquad \log\sum_{v=1}^{V}\exp(z_{t,v}) = m + \log\sum_{v=1}^{V}\exp(z_{t,v}-m)$$
+
+Ainsi, tous les exposants $z_{t,v}-m$ sont négatifs ou nuls : aucun $\exp$ ne dépasse 1, donc pas de
+dépassement de capacité. Le cours parle aussi de dépassement « d'entier » : il s'agit en réalité de
+nombres à virgule flottante. En pratique, `F.cross_entropy` de PyTorch fait déjà ce calcul.
+
+**3. Un net win rate de −1 signifie que le modèle perd toujours.**
+
+Le cours affiche « 1.0 » pour ce cas, le signe moins a disparu :
+
+$$\text{Net win rate} = \frac{W-L}{W+L} \in [-1, +1]$$
+
++1 : le modèle gagne toujours ; 0 : autant de victoires que de défaites ; **−1** : il perd toujours.
+
+## Pièges du cours Hugging Face, chapitre 11
+
+- **Code incomplet :** les extraits n'importent pas `AutoModelForCausalLM`, `AutoTokenizer` ni
+  `setup_chat_format`, et `setup_chat_format` vient d'une ancienne version de TRL. Ne copiez pas le
+  code tel quel, vérifiez l'API de la version installée.
+- **Règle non respectée par son propre exemple :** le cours conseille `lora_alpha` ≈ 2 × `r`, mais
+  son exemple utilise `r=6` et `lora_alpha=8` (la règle donnerait 12).
+- **Backend d'évaluation :** le texte annonce vLLM, mais la commande lance `lighteval accelerate`.
+- **Exemple médical discutable :** il inclut `high_school_chemistry`, qui n'est pas de la médecine.
 
 ## Sources
 
 - [Post-training 101](https://tokens-for-thoughts.notion.site/post-training-101)
 - [TRL, DPO Trainer](https://huggingface.co/docs/trl/dpo_trainer)
-- [Cours LLM de Hugging Face, chapitre 11](https://huggingface.co/learn/llm-course/chapter11/1)
+- [Cours LLM de Hugging Face, chapitre 11](https://huggingface.co/learn/llm-course/en/chapter11/1) (sections 1 à 6)
 - [Goh et al., JAMA Network Open, 2024](https://jamanetwork.com/journals/jamanetworkopen/fullarticle/2825395)
 - [Référentiel FRENCH, SFMU](https://www.sfmu.org/upload/referentielsSFMU/2019%2012%2006%20FRENCH%20pour%20PDF%20A4%20V1.2%20site.pdf)
 - [vLLM, adaptateurs LoRA](https://docs.vllm.ai/en/latest/features/lora/)

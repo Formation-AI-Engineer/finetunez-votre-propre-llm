@@ -49,7 +49,7 @@ acceptable ?
 | Point | Constat | Choix retenu |
 |---|---|---|
 | Nom du corpus | « MediQA » dans le texte, `ANR-MALADES/MediQAl` dans le lien | MediQAl |
-| Lien FrenchMedMCQA | Lien cassé (`http://nthngdy/frenchmedmcqa`). Sur le Hub, `nthngdy/frenchmedmcqa` : 1 080 lignes, sans licence ni description ; `qanastek/frenchmedmcqa` : 3 105 questions, Apache 2.0, à script de chargement | `qanastek`, en lisant ses fichiers directement, sauf avis contraire |
+| Lien FrenchMedMCQA | Lien cassé (`http://nthngdy/frenchmedmcqa`). Sur le Hub, `nthngdy/frenchmedmcqa` : 1 080 lignes, sans licence ni description, et apparemment limité aux QCM à réponse unique ; `qanastek/frenchmedmcqa` : 3 105 questions, Apache 2.0, données dans `DEFT-2023-FULL.zip` avec un script de chargement | `qanastek`, en lisant le zip directement, sauf avis contraire |
 | Licence MedQuAD | Aucune sur le miroir `keivalya/MedQuad-MedicalQnADataset` | Vérifier la licence du dépôt d'origine avant publication |
 | Modèle livré | Le tableau des livrables cite « SFT et LoRA », la mission ajoute DPO | SFT + LoRA + DPO |
 | GRPO | Cité seulement à l'étape 2 (« DPO / GRPO ») | Facultatif |
