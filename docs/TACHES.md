@@ -22,24 +22,31 @@ Vue d'ensemble :
 ## À faire de votre côté
 
 Ce qui ne peut pas être fait à votre place. Le reste de la fiche est à réaliser ensemble.
+Plus rien ne bloque l'étape 1.
 
-### Pour démarrer l'étape 1
-- [ ] Exporter en PDF dans `docs/enonce/` les pages OpenClassrooms réservées aux inscrits :
-      « Organisez-vous pour ce projet », « Enjeux de l'IA générative pour un citoyen européen »,
-      « Supervised Fine-Tuning » et, si elle est disponible, la fiche d'auto-évaluation
-- [ ] Vérifier s'il existe un PDF `-2` : la numérotation passe de `-1` à `-3`
-- [ ] Créer un jeton Hugging Face et un compte Weights & Biases, puis les renseigner dans `.env`
-      (`cp .env.example .env`), jamais dans le chat ni dans Git
+### Étape 1 ✅
+- [x] Cours OpenClassrooms : lus directement sur la plateforme, pas d'export PDF nécessaire
+- [x] PDF `-2` : c'est la page de la mission, renommée
+- [x] Fiche d'auto-évaluation : il n'y en a pas pour ce projet
+- [x] Jeton Hugging Face (Write) et clé Weights & Biases renseignés dans `.env`
 
-### Pour démarrer l'étape 2
-- [ ] Choisir le GPU d'entraînement (Colab, Kaggle ou location) et fixer un budget
+### Pour l'étape 2
+- [x] GPU d'entraînement : Kaggle (gratuit), Colab en secours
+- [x] Kaggle : GPU T4 x2 (15 Gio chacun), 30 Gio de RAM, sessions de 12 h, Internet activé,
+      secret `HF_TOKEN` lu dans un notebook
+- [x] Jeton Hugging Face remplacé après son affichage en clair (nouveau jeton Write vérifié dans `.env`)
+- [x] Nouveau jeton dans le secret Kaggle `HF_TOKEN`, sortie du notebook de test effacée
+- [x] `WANDB_API_KEY` ajouté aux Kaggle Secrets
+- [ ] Kaggle tourne sous Python 3.13, le projet sous 3.12 : à gérer dans le notebook d'entraînement
 
 ### Avec le mentor
 - [ ] Passer en revue `docs/POINT_MENTOR.md`, en commençant par les données de triage synthétiques
 - [ ] Faire valider les seuils d'acceptation et la correspondance FRENCH vers les 3 niveaux
 
 ### Pour l'étape 4
-- [ ] Choisir le fournisseur cloud de la démonstration et y ouvrir un compte
+- [x] Fournisseur de la démonstration : Modal (30 $ de crédits par mois, facturé seulement à l'usage)
+- [ ] Compte Modal, avec un plafond de dépenses s'il demande une carte bancaire
+- [ ] Jeton Hugging Face Read (ou *fine-grained* limité au dépôt du modèle) pour l'endpoint
 
 ---
 
@@ -52,7 +59,7 @@ Ce qui ne peut pas être fait à votre place. Le reste de la fiche est à réali
 - [x] Hyperparamètres de départ : `configs/sft.yaml`, `configs/dpo.yaml`
 - [x] Dépôt distant GitHub configuré (`origin`)
 - [x] Premier commit et premier envoi vers GitHub (`main` et `dev`)
-- [ ] Comptes et jetons : Hugging Face, Weights & Biases, fournisseur GPU
+- [x] Comptes et jetons : Hugging Face (Write), Weights & Biases
 
 ---
 
@@ -65,7 +72,6 @@ Ce qui ne peut pas être fait à votre place. Le reste de la fiche est à réali
 - [ ] Parcourir le référentiel FRENCH de la SFMU **(ajout)**
 - [ ] Passer en revue `docs/POINT_MENTOR.md` en session de mentorat
 - [ ] Valider le périmètre de l'agent : questionnaire adaptatif, intégration au SI
-- [ ] Récupérer la fiche d'auto-évaluation à compléter avant la soutenance
 
 ---
 
@@ -133,7 +139,7 @@ Ce qui ne peut pas être fait à votre place. Le reste de la fiche est à réali
 
 ### Préparation
 - [ ] Définir les métriques cliniques et les seuils d'acceptation (propositions ci-dessous)
-- [ ] Louer ou activer un GPU (pas de GPU sur le poste local) et installer `uv sync --extra train`
+- [ ] Activer le GPU Kaggle (pas de GPU sur le poste local) et installer `uv sync --extra train`
 - [ ] Mesure de référence : évaluer Qwen3-1.7B-Base **avant** tout entraînement
 - [ ] Choisir et documenter le mode sans raisonnement (`enable_thinking=False`)
 
@@ -225,7 +231,6 @@ Ce qui ne peut pas être fait à votre place. Le reste de la fiche est à réali
 ### Dépôt
 - [ ] Livrables nommés `Nom_Prenom_n°_nom_mmaaaa` (mois de démarrage, 102026 si le projet démarre
       en octobre 2026), dans une archive `Titre_du_projet_nom_prenom.zip`
-- [ ] Fiche d'auto-évaluation complétée
 
 | N° | Livrable | Forme |
 |---|---|---|
