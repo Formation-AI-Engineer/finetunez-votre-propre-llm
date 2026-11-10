@@ -83,3 +83,42 @@ synthétiques, donc ces chiffres ne garantissent rien en conditions réelles.
 
 **Questions pour le mentor** : ces seuils sont-ils réalistes, faut-il augmenter le nombre de
 vignettes de test pour resserrer l'intervalle, et un no-go argumenté est-il acceptable ?
+
+## Lancer une évaluation
+
+`scripts/evaluate.py` génère les réponses sur GPU, puis les note avec `src/triage/evaluation.py`.
+Le dataset est lu sur le Hub à la révision fixée dans `configs/sft.yaml`.
+
+```bash
+uv run --extra train python scripts/evaluate.py --name base                      # modèle de base
+uv run --extra train python scripts/evaluate.py --name base-fewshot --few-shot --batch-size 8
+uv run --extra train python scripts/evaluate.py --name sft --adapter outputs/sft/best
+```
+
+Résultats dans `outputs/eval/<nom>/<split>/` : `predictions.jsonl` (réponse brute de chaque
+question, pour relire les erreurs), `summary.json` et `summary.md` (métriques et conditions du
+run : commit, révision du dataset, précision, GPU, durée).
+
+Réglages communs à tous les modèles :
+
+- **Mise en forme** : modèle de conversation Qwen3 avec `enable_thinking=False`, comme à
+  l'entraînement. Le prompt se termine par `<|im_start|>assistant` et un bloc `<think></think>` vide.
+- **Décodage glouton** (`do_sample=False`) : la même question donne toujours la même réponse.
+- **Fin de réponse** : au premier `<|im_end|>` (fin de tour du format conversation) ou
+  `<|endoftext|>` (jeton de fin du modèle de base).
+- **Longueur maximale** : 320 jetons pour une vignette, 160 pour un QCM. Les corrigés font au plus
+  217 et 112 jetons ; le nombre de réponses coupées est rapporté.
+
+## Mesure de référence (modèle de base)
+
+Deux mesures, sur le jeu de validation :
+
+| Run | Ce qu'il mesure |
+|---|---|
+| `base` (*zero-shot*) | Le modèle tel qu'il serait déployé sans entraînement. Il ne connaît pas le format de réponse : un `format_ok` faible est attendu |
+| `base-fewshot` | Le modèle après 3 vignettes (une par priorité) et 2 QCM résolus, tirés du jeu d'entraînement. Il sépare « ne connaît pas le format » de « ne sait pas trier » |
+
+Le SFT est comparé aux deux : il doit faire mieux que `base-fewshot` pour justifier l'entraînement,
+puisqu'un simple prompt avec exemples coûte bien moins cher. Limite : les exemples sont toujours
+dans le même ordre (maximale, modérée, différée), ce qui peut pousser le modèle vers la dernière
+priorité vue.

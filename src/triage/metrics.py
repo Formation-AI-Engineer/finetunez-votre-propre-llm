@@ -182,5 +182,10 @@ ACCEPTANCE = (
 )
 
 
-def check_acceptance(scores: TriageScores) -> dict[str, bool]:
-    return {t.metric: t.passes(getattr(scores, t.metric).value) for t in ACCEPTANCE}
+def check_acceptance(scores: TriageScores) -> dict[str, bool | None]:
+    """Seuil atteint ou non ; None si la métrique n'a pas pu être mesurée (aucun cas)."""
+    result: dict[str, bool | None] = {}
+    for t in ACCEPTANCE:
+        rate = getattr(scores, t.metric)
+        result[t.metric] = t.passes(rate.value) if rate.n else None
+    return result

@@ -1,6 +1,10 @@
 # Point de départ à ajuster après les petits runs de validation (étape 2).
 model_id: Qwen/Qwen3-1.7B-Base
 seed: 42
+# Dataset privé sur le Hub, à une révision fixe (contenu vérifié contre data/processed/build_log.json).
+dataset:
+  repo_id: lcamara/triage-chsa
+  revision: c6d370f92ca464d172152960329d41352088bf98
 lora:
   r: 16
   lora_alpha: 32

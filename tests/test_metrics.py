@@ -119,3 +119,8 @@ def test_mcq_scores_exact_match_and_hamming():
     assert scores.format_ok.k == 2
     # Hamming : 1 + 1/2 + 0 (réponse illisible) sur 3 questions.
     assert scores.hamming == pytest.approx(0.5)
+
+
+def test_acceptance_is_undefined_without_maximale_cases():
+    scores = triage_scores(["differee"], [a("differee")])
+    assert check_acceptance(scores) == {"under_triage_maximale": None, "accuracy": True}
