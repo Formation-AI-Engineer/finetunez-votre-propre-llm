@@ -57,6 +57,8 @@ def test_missing_or_unreadable_answers_count_as_errors(eval_file):
     assert summary["triage"]["format_ok"]["k"] == 0
     assert summary["triage"]["accuracy"]["k"] == 0
     assert summary["qcm"]["mediqal"]["format_ok"]["k"] == 0
+    assert summary["unreadable_examples"]["qcm"][0]["answer"] in ("", "Je ne sais pas.")
+    assert "Exemples de réponses illisibles (triage)" in to_markdown(summary, "test")
 
 
 def test_limit_keeps_at_most_n_per_task(eval_file):

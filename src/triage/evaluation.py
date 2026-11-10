@@ -26,6 +26,8 @@ from triage.metrics import (
 from triage.output import parse_assessment
 
 EVAL_TASKS = ("triage", "qcm")
+UNREADABLE_SHOWN = 3  # réponses illisibles recopiées dans le résumé, par tâche
+UNREADABLE_CHARS = 500
 
 
 @dataclass(frozen=True)
@@ -177,6 +179,17 @@ def score(items: Iterable[EvalItem], answers: Mapping[str, str]) -> dict:
                 "hamming": s.hamming,
                 "format_ok": _rate(s.format_ok),
             }
+
+    # Quelques réponses illisibles par tâche, pour voir tout de suite ce que le modèle écrit.
+    readers = {"triage": parse_assessment, "qcm": parse_mcq}
+    summary["unreadable_examples"] = {
+        task: [
+            {"id": i.id, "answer": answers.get(i.id, "")[:UNREADABLE_CHARS]}
+            for i in items
+            if i.task == task and readers[task](answers.get(i.id, "")) is None
+        ][:UNREADABLE_SHOWN]
+        for task in EVAL_TASKS
+    }
     return summary
 
 
@@ -222,6 +235,11 @@ def to_markdown(summary: dict, title: str) -> str:
                 f"| {q['format_ok']['value']:.1%} |"
             )
         lines.append("")
+    for task, examples in summary.get("unreadable_examples", {}).items():
+        if examples:
+            lines += [f"## Exemples de réponses illisibles ({task})", ""]
+            for example in examples:
+                lines += [f"`{example['id']}` :", "", "```text", example["answer"], "```", ""]
     return "\n".join(lines)
 
 
