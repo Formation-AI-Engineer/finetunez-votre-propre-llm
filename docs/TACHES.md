@@ -39,9 +39,9 @@ Plus rien ne bloque l'étape 1.
 - [x] `WANDB_API_KEY` ajouté aux Kaggle Secrets
 - [x] Kaggle tourne sous Python 3.13, le projet sous 3.12 : uv installe Python 3.12 dans la session
       (`scripts/kaggle_bootstrap.sh`)
-- [ ] Jeton GitHub *fine-grained* en lecture seule sur le dépôt, ajouté au secret Kaggle `GITHUB_TOKEN`
+- [x] Jeton GitHub *fine-grained* en lecture seule sur le dépôt, ajouté au secret Kaggle `GITHUB_TOKEN`
       (le dépôt est privé)
-- [ ] Lancer `notebooks/kaggle_setup.ipynb` sur Kaggle et me transmettre la sortie de la dernière cellule
+- [x] Lancer `notebooks/kaggle_setup.ipynb` sur Kaggle et me transmettre la sortie de la dernière cellule
 
 ### Avec le mentor
 - [ ] Passer en revue `docs/POINT_MENTOR.md`, en commençant par les données de triage synthétiques
@@ -149,8 +149,9 @@ Plus rien ne bloque l'étape 1.
 ### Préparation
 - [x] Définir les métriques cliniques et les seuils d'acceptation (propositions ci-dessous) :
       `docs/EVALUATION.md`, calcul dans `src/triage/metrics.py`
-- [~] Activer le GPU Kaggle (pas de GPU sur le poste local) et installer `uv sync --extra train` :
-      `notebooks/kaggle_setup.ipynb` prêt, torch fixé en CUDA 12.6, reste à l'exécuter sur Kaggle
+- [x] Activer le GPU Kaggle (pas de GPU sur le poste local) et installer `uv sync --extra train` :
+      `notebooks/kaggle_setup.ipynb` ; vérifié le 10/11/2026 : 2 × Tesla T4 (14,6 Gio, capacité 7.5),
+      pilote 580.178.04, torch 2.14.1+cu126, Python 3.12.3. Pas de bf16 : entraîner en **fp16**
 - [ ] Mesure de référence : évaluer Qwen3-1.7B-Base **avant** tout entraînement
 - [ ] Choisir et documenter le mode sans raisonnement (`enable_thinking=False`)
 
