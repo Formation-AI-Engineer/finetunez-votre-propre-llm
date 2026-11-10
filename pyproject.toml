@@ -36,7 +36,19 @@ train = [
     "trl>=0.19",
     "accelerate>=1.0",
     "wandb>=0.18",
+    "pyyaml>=6.0",
 ]
+
+# torch vient de l'index CUDA 12.6 de PyTorch : la version PyPI (torch 2.15) est compilée pour
+# CUDA 13, qui exige un pilote NVIDIA >= 580 ; CUDA 12.6 tourne avec tout pilote >= 525 et
+# reconnaît le T4 de Kaggle (architecture sm_75). Cet index s'arrête à torch 2.14.
+[[tool.uv.index]]
+name = "pytorch-cu126"
+url = "https://download.pytorch.org/whl/cu126"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu126" }
 
 [dependency-groups]
 dev = [

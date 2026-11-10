@@ -1,7 +1,8 @@
 """
 Ce script télécharge toutes les données brutes du projet dans data/raw/.
-Chaque source est figée à une version précise, et le script écrit un fichier data/raw/MANIFEST.json qui note l'origine, la version,
-la licence et l'empreinte SHA-256 de chaque fichier.
+Chaque source est figée à une version précise, et le script écrit un fichier
+data/raw/MANIFEST.json qui note l'origine, la version, la licence et l'empreinte SHA-256 de
+chaque fichier.
 
 Le but est que n'importe qui, en relançant le script, récupère exactement les mêmes octets.
 On le lance avec :
