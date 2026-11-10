@@ -1,8 +1,11 @@
-"""Télécharge les sources brutes dans data/raw/, à des révisions épinglées.
+"""
+Ce script télécharge toutes les données brutes du projet dans data/raw/.
+Chaque source est figée à une version précise, et le script écrit un fichier data/raw/MANIFEST.json qui note l'origine, la version,
+la licence et l'empreinte SHA-256 de chaque fichier.
 
-Usage : uv run --extra data python scripts/download_data.py [--force]
-
-Chaque fichier est vérifié par son empreinte SHA-256, consignée dans data/raw/MANIFEST.json.
+Le but est que n'importe qui, en relançant le script, récupère exactement les mêmes octets.
+On le lance avec :
+uv run --extra data python scripts/download_data.py (ajouter --force pour tout retélécharger).
 """
 
 from __future__ import annotations

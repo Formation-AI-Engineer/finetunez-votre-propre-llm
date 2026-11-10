@@ -143,7 +143,8 @@ Plus rien ne bloque l'étape 1.
 **À la fin :** adaptateur SFT reproductible, métriques documentées, comparaison avec le modèle de base.
 
 ### Préparation
-- [ ] Définir les métriques cliniques et les seuils d'acceptation (propositions ci-dessous)
+- [x] Définir les métriques cliniques et les seuils d'acceptation (propositions ci-dessous) :
+      `docs/EVALUATION.md`, calcul dans `src/triage/metrics.py`
 - [ ] Activer le GPU Kaggle (pas de GPU sur le poste local) et installer `uv sync --extra train`
 - [ ] Mesure de référence : évaluer Qwen3-1.7B-Base **avant** tout entraînement
 - [ ] Choisir et documenter le mode sans raisonnement (`enable_thinking=False`)
