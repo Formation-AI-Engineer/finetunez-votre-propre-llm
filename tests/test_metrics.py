@@ -9,6 +9,7 @@ from triage.metrics import (
     format_confusion,
     mcq_scores,
     parse_mcq,
+    parse_mcq_lenient,
     triage_scores,
     wilson_interval,
 )
@@ -124,3 +125,23 @@ def test_mcq_scores_exact_match_and_hamming():
 def test_acceptance_is_undefined_without_maximale_cases():
     scores = triage_scores(["differee"], [a("differee")])
     assert check_acceptance(scores) == {"under_triage_maximale": None, "accuracy": True}
+
+
+@pytest.mark.parametrize(
+    ("text", "letters"),
+    [
+        # Réponses réelles de Qwen3-1.7B-Base (mesure de référence).
+        ("La réponse correcte est : **B. Erythromycine**.", {"B"}),
+        ("E. ...\n\nRéponse : A, B, C, D, E\n\nA. ...", {"A", "B", "C", "D", "E"}),
+        ("Réponses : a, d", {"A", "D"}),
+        ("Réponse : a et c", {"A", "C"}),
+        ("Bonne réponse : C\n- C. x", {"C"}),
+        # Pas de lettre isolée : rien n'est lu plutôt que deviner.
+        ("Réponse : La réponse fausse est E.", None),
+        ("Réponse : Aucune", None),
+        ("Répondez en donnant la ou les bonnes propositions.", None),
+    ],
+)
+def test_parse_mcq_lenient(text, letters):
+    expected = frozenset(letters) if letters is not None else None
+    assert parse_mcq_lenient(text) == expected

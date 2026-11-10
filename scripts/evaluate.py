@@ -155,7 +155,7 @@ def main() -> None:
     parser.add_argument(
         "--few-shot",
         action="store_true",
-        help="montrer d'abord des exemples résolus du jeu d'entraînement (modèle de base)",
+        help="vignettes seulement, précédées de 3 exemples résolus du jeu d'entraînement",
     )
     args = parser.parse_args()
 
@@ -164,8 +164,10 @@ def main() -> None:
     data_path = dataset_file(dataset, args.split)
     items = load_items(data_path, limit=args.limit)
     if args.few_shot:
+        # Vignettes seulement : en few-shot, le modèle de base recopie les QCM d'exemple au lieu
+        # de répondre (vérifié en fp16 et en fp32, docs/EVALUATION.md).
         examples = pick_examples(dataset_file(dataset, "train"))
-        items = [with_examples(i, examples[i.task]) for i in items]
+        items = [with_examples(i, examples["triage"]) for i in items if i.task == "triage"]
     out_dir = Path("outputs/eval") / args.name / args.split
     out_dir.mkdir(parents=True, exist_ok=True)
     print(f"{len(items)} questions ({data_path.name}) -> {out_dir}")

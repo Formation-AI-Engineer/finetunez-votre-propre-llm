@@ -23,6 +23,13 @@ INVALID = "invalide"
 _MCQ_HEADER = re.compile(
     r"[Bb]onnes? [Rr]éponses?[ \t]*:[ \t]*([A-E](?:[ \t]*(?:,|;|/|et)[ \t]*[A-E])*)\b"
 )
+# Lecture tolérante, pour mesurer les connaissances d'un modèle qui n'a pas appris le format :
+# « Réponse : c », « La réponse correcte est : **B. … »,  « Réponses : a, d ». La lettre ne doit pas
+# commencer un mot (« Réponse : La … » n'est pas lu comme A).
+_MCQ_LENIENT = re.compile(
+    r"[Rr]éponses?(?:[ \t]+(?:correctes?|exactes?|justes?))?(?:[ \t]+(?:est|sont))?[ \t]*:"
+    r"[ \t]*\**[ \t]*([A-Ea-e](?:[ \t]*(?:,|;|/|et)[ \t]*[A-Ea-e])*)(?![A-Za-zÀ-ÿ'’])"
+)
 
 
 @dataclass(frozen=True)
@@ -134,6 +141,15 @@ def parse_mcq(text: str) -> frozenset[str] | None:
     if not match:
         return None
     return frozenset(re.findall(r"[A-E]", match.group(1)))
+
+
+def parse_mcq_lenient(text: str) -> frozenset[str] | None:
+    """Lettres de la première « réponse : X » du texte, quel que soit le format exact."""
+    match = _MCQ_HEADER.search(text) or _MCQ_LENIENT.search(text)
+    if not match:
+        return None
+    letters = re.sub(r"\bet\b", " ", match.group(1)).upper()
+    return frozenset(re.findall(r"[A-E]", letters))
 
 
 def mcq_scores(

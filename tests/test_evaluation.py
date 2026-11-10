@@ -101,3 +101,14 @@ def test_few_shot_examples_come_before_the_question(tmp_path, eval_file):
     assert shot.messages[-1] == item.messages[-1]  # la question évaluée reste en dernier
     assert sum(m["role"] == "system" for m in shot.messages) == 1
     assert shot.expected == item.expected
+
+
+def test_lenient_reading_credits_answers_in_another_format(eval_file):
+    path, _ = eval_file
+    items = load_items(path)
+    qcm = next(i for i in items if i.task == "qcm")  # bonnes réponses : A et C
+    summary = score([qcm], {qcm.id: "Réponses : a, c"})
+    q = summary["qcm"]["mediqal"]
+    assert q["format_ok"]["k"] == 0 and q["exact_match"]["k"] == 0
+    assert q["exact_match_lenient"]["k"] == 1
+    assert not summary["unreadable_examples"]["qcm"]

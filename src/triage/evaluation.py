@@ -21,6 +21,7 @@ from triage.metrics import (
     format_confusion,
     mcq_scores,
     parse_mcq,
+    parse_mcq_lenient,
     triage_scores,
 )
 from triage.output import parse_assessment
@@ -169,19 +170,25 @@ def score(items: Iterable[EvalItem], answers: Mapping[str, str]) -> dict:
         summary["qcm"] = {}
         for source in sorted({i.source for i in qcm}):
             group = [i for i in qcm if i.source == source]
-            s = mcq_scores(
-                [frozenset(i.expected) for i in group],
-                [parse_mcq(answers.get(i.id, "")) for i in group],
+            expected = [frozenset(i.expected) for i in group]
+            strict = mcq_scores(expected, [parse_mcq(answers.get(i.id, "")) for i in group])
+            lenient = mcq_scores(
+                expected, [parse_mcq_lenient(answers.get(i.id, "")) for i in group]
             )
             summary["qcm"][source] = {
                 "n": len(group),
-                "exact_match": _rate(s.exact_match),
-                "hamming": s.hamming,
-                "format_ok": _rate(s.format_ok),
+                "exact_match": _rate(strict.exact_match),
+                "hamming": strict.hamming,
+                "format_ok": _rate(strict.format_ok),
+                # Lecture tolérante : connaissances, même sans le format appris.
+                "exact_match_lenient": _rate(lenient.exact_match),
+                "hamming_lenient": lenient.hamming,
+                "readable_lenient": _rate(lenient.format_ok),
             }
 
-    # Quelques réponses illisibles par tâche, pour voir tout de suite ce que le modèle écrit.
-    readers = {"triage": parse_assessment, "qcm": parse_mcq}
+    # Quelques réponses illisibles par tâche (même en lecture tolérante pour les QCM), pour voir
+    # tout de suite ce que le modèle écrit.
+    readers = {"triage": parse_assessment, "qcm": parse_mcq_lenient}
     summary["unreadable_examples"] = {
         task: [
             {"id": i.id, "answer": answers.get(i.id, "")[:UNREADABLE_CHARS]}
@@ -227,12 +234,30 @@ def to_markdown(summary: dict, title: str) -> str:
         lines += [f"- {style} : {_pct(r)}" for style, r in t["accuracy_by_style"].items()]
         lines += ["", "Matrice de confusion :", "", format_confusion(t["confusion"]), ""]
     if "qcm" in summary:
-        lines += ["## QCM", "", "| Source | n | Exact match [IC 95 %] | Hamming | Format lisible |"]
-        lines.append("|---|---|---|---|---|")
+        lines += [
+            "## QCM",
+            "",
+            "Lecture stricte (format « Bonne réponse : X » appris) :",
+            "",
+            "| Source | n | Exact match [IC 95 %] | Hamming | Format lisible |",
+            "|---|---|---|---|---|",
+        ]
         for source, q in summary["qcm"].items():
             lines.append(
                 f"| {source} | {q['n']} | {_pct(q['exact_match'])} | {q['hamming']:.3f} "
                 f"| {q['format_ok']['value']:.1%} |"
+            )
+        lines += [
+            "",
+            "Lecture tolérante (« Réponse : c », « La réponse correcte est : B… ») :",
+            "",
+            "| Source | n | Exact match [IC 95 %] | Hamming | Lisible |",
+            "|---|---|---|---|---|",
+        ]
+        for source, q in summary["qcm"].items():
+            lines.append(
+                f"| {source} | {q['n']} | {_pct(q['exact_match_lenient'])} "
+                f"| {q['hamming_lenient']:.3f} | {q['readable_lenient']['value']:.1%} |"
             )
         lines.append("")
     for task, examples in summary.get("unreadable_examples", {}).items():

@@ -21,8 +21,12 @@ utilisé qu'une fois, sur l'adaptateur retenu.
 - **Triage** : `parse_assessment` (`src/triage/output.py`) lit la ligne
   `Niveau de priorité : MODÉRÉE (tri FRENCH 3A)`. Si le tri FRENCH contredit la priorité
   annoncée, c'est la plus grave des deux qui est retenue.
-- **QCM** : `parse_mcq` lit `Bonne réponse : A` ou `Bonnes réponses : A, C`. Les lettres doivent
-  être en majuscules et sur la même ligne.
+- **QCM, lecture stricte** : `parse_mcq` lit `Bonne réponse : A` ou `Bonnes réponses : A, C`.
+  Les lettres doivent être en majuscules et sur la même ligne. C'est le format appris au SFT.
+- **QCM, lecture tolérante** : `parse_mcq_lenient` lit aussi `Réponse : c`, `Réponses : a, d` ou
+  `La réponse correcte est : **B. …`. Elle mesure les connaissances d'un modèle qui n'a pas
+  appris le format, comme le modèle de base. Une lettre qui commence un mot n'est pas lue :
+  `Réponse : La réponse fausse est E` reste illisible plutôt que d'être deviné.
 
 Une réponse qui ne suit pas le format est **illisible**. Elle n'est jamais écartée du calcul :
 elle compte comme une erreur, et le taux de réponses lisibles (`format_ok`) est rapporté à part.
@@ -47,6 +51,7 @@ score avec son `format_ok`.
 | `exact_match` | Ensemble des lettres prédites = ensemble des bonnes lettres |
 | `hamming` | Moyenne de \|prédit ∩ attendu\| ÷ \|prédit ∪ attendu\| : crédit partiel pour les QCM à plusieurs réponses (0 pour une réponse illisible) |
 | `format_ok` | Réponses lisibles ÷ toutes les questions |
+| `exact_match_lenient`, `hamming_lenient`, `readable_lenient` | Les mêmes, en lecture tolérante |
 
 Ces métriques servent à vérifier que le SFT **apporte** des connaissances, ou du moins n'en
 détruit pas, par rapport au modèle de base. Elles n'ont pas de seuil d'acceptation.
@@ -116,9 +121,29 @@ Deux mesures, sur le jeu de validation :
 | Run | Ce qu'il mesure |
 |---|---|
 | `base` (*zero-shot*) | Le modèle tel qu'il serait déployé sans entraînement. Il ne connaît pas le format de réponse : un `format_ok` faible est attendu |
-| `base-fewshot` | Le modèle après 3 vignettes (une par priorité) et 2 QCM résolus, tirés du jeu d'entraînement. Il sépare « ne connaît pas le format » de « ne sait pas trier » |
+| `base-fewshot` | Les vignettes seulement, précédées de 3 vignettes résolues (une par priorité) tirées du jeu d'entraînement. Il sépare « ne connaît pas le format » de « ne sait pas trier » |
 
 Le SFT est comparé aux deux : il doit faire mieux que `base-fewshot` pour justifier l'entraînement,
 puisqu'un simple prompt avec exemples coûte bien moins cher. Limite : les exemples sont toujours
-dans le même ordre (maximale, modérée, différée), ce qui peut pousser le modèle vers la dernière
-priorité vue.
+dans le même ordre (maximale, modérée, différée), ce qui pourrait pousser le modèle vers la
+dernière priorité vue. Le biais observé va en fait vers « modérée », la priorité du milieu.
+
+Pas de few-shot pour les QCM : avec 2 QCM résolus en exemple, le modèle de base **recopie les
+exemples** au lieu de répondre. Ses connaissances sont mesurées en zero-shot, en lecture tolérante.
+
+### fp16 ou fp32 ?
+
+Le T4 n'a pas de bf16, le format d'entraînement de Qwen3, et le fp16 peut déborder (valeur
+maximale 65 504). Le modèle de base produisant parfois des sorties dégénérées (`.waitKey` ou
+`.createTextNode` répétés), l'étape Kaggle `dtype_check` a comparé fp16 et fp32 sur les mêmes 30
+questions par tâche (10/11/2026) :
+
+| | fp16 | fp32 |
+|---|---|---|
+| Exactitude triage, zero-shot | 3/30 | 2/30 |
+| Exactitude triage, few-shot | 13/30 | 13/30 (matrice identique) |
+| Sorties dégénérées | sur les mêmes questions | sur les mêmes questions |
+| Débit | 195 jetons/s | 89 jetons/s |
+
+Les sorties dégénérées sont un comportement du modèle de base, pas un débordement numérique :
+**l'inférence en fp16 est retenue**, plus de deux fois plus rapide.
