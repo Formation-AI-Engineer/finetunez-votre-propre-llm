@@ -80,7 +80,6 @@ if run.exists():
 EOF
 [ -f outputs/eval/smoke-overfit/validation/summary.md ] &&
     sed -n '1,/^## Exemples/p' outputs/eval/smoke-overfit/validation/summary.md
-tail -n 2 outputs/eval/smoke-overfit/validation/summary.md 2>/dev/null
 
 echo "==== Reprise (cuda:1)"
 grep -E "^Reprise|Interrompu|s'est arrêté" outputs/logs/sft_smoke_resume.log
