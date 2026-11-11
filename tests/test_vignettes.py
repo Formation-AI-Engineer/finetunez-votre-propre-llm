@@ -1,3 +1,5 @@
+import re
+
 import pytest
 
 pytest.importorskip("yaml")
@@ -76,3 +78,30 @@ def test_dpo_rejected_is_an_under_triage():
         rejected = parse_assessment(record.rejected[0].content)
         assert severity(rejected.french_level) > severity(chosen.french_level)
         assert rejected.priority != chosen.priority
+
+
+def test_lines_said_by_a_relative_are_marked_tiers():
+    # « Mon mari… », « Ma mère… » : sans le marquage, le récit ajouterait « J'ai 68 ans ».
+    relative = re.compile(
+        r"\b(mari|femme|épouse|conjoint|ami|amie|père|mère|fils|fille|frère|sœur|voisin|voisine)\b"
+    )
+    specs, _ = load_specs()
+    for spec in specs:
+        for line in spec.patient:
+            if spec.age[0] >= 18 and relative.search(line.split(",")[0]):
+                assert line in spec.proxy, line
+
+
+def test_relative_gives_age_and_history_in_third_person():
+    specs, _ = load_specs()
+    proxy = {line for spec in specs for line in spec.proxy}
+    seen = 0
+    for record in generate_sft(1500, "train", seed=3):
+        if record.metadata.extra.get("style") != "patient":
+            continue
+        text = record.prompt[-1].content
+        if any(text.startswith(line.replace("{e}", "")) for line in proxy):
+            seen += 1
+            assert "J'ai" not in text and "Mes antécédents" not in text, text
+            assert " a " in text.split("\n")[0]
+    assert seen, "aucune vignette racontée par un proche dans l'échantillon"

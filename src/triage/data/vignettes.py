@@ -98,6 +98,8 @@ class MotifSpec:
     sex: str | None
     history: list[str]
     alternatives: list[Alternative] = field(default_factory=list)
+    # Phrases de `patient` dites par un proche (« Mon mari… ») : âge, antécédents à la 3e personne.
+    proxy: frozenset[str] = frozenset()
 
 
 @dataclass
@@ -127,11 +129,14 @@ def load_specs(config_path: Path = CONFIG_PATH) -> tuple[list[MotifSpec], list[s
         spec = MotifSpec(
             motif=motif,
             complaints=entry["plaintes"],
-            patient=entry["patient"],
+            # Même liste, dans le même ordre, que la phrase soit dite par le patient ou un proche :
+            # les tirages aléatoires ne dépendent pas de ce marquage.
+            patient=[p["tiers"] if isinstance(p, dict) else p for p in entry["patient"]],
             question=entry["question"],
             age=tuple(entry["age"]),
             sex=entry.get("sexe"),
             history=entry.get("antecedents", []),
+            proxy=frozenset(p["tiers"] for p in entry["patient"] if isinstance(p, dict)),
         )
         for key, alternatives in entry["niveaux"].items():
             key = str(key)
@@ -307,13 +312,15 @@ def _history_text(history: list[str]) -> str:
     return ", ".join(history) if history else "aucun"
 
 
-def _patient_opening(case: Case, rng: random.Random) -> str:
-    """Première prise de parole, par un parent si un motif d'adulte concerne un enfant."""
+def _patient_opening(case: Case, rng: random.Random) -> tuple[str, bool]:
+    """Première prise de parole, par un parent si un motif d'adulte concerne un enfant, et si
+    elle est dite par un proche plutôt que par le patient."""
     if case.age < ADULT_AGE and case.spec.age[0] >= ADULT_AGE:
         relation = "ma fille" if case.sex == "F" else "mon fils"
         complaint = rng.choice(case.spec.complaints)
-        return f"Je viens pour {relation} de {_age_text(case.age)} : {complaint}."
-    return _gender(rng.choice(case.spec.patient), case.sex)
+        return f"Je viens pour {relation} de {_age_text(case.age)} : {complaint}.", True
+    line = rng.choice(case.spec.patient)
+    return _gender(line, case.sex), line in case.spec.proxy
 
 
 def _clinical_block(case: Case, include_signs: bool) -> str:
@@ -338,11 +345,14 @@ def render_note(case: Case, rng: random.Random) -> str:
 
 def render_patient(case: Case, rng: random.Random) -> str:
     said = _gender(case.alternative.patient, case.sex) if case.alternative.patient else None
-    text = said if said and case.age >= ADULT_AGE else _patient_opening(case, rng)
+    text, proxy = (said, False) if said and case.age >= ADULT_AGE else _patient_opening(case, rng)
     if case.age >= ADULT_AGE:
-        text += f" J'ai {_age_text(case.age)}."
+        if proxy:
+            text += f" {'Elle' if case.sex == 'F' else 'Il'} a {_age_text(case.age)}."
+        else:
+            text += f" J'ai {_age_text(case.age)}."
         if case.history:
-            text += f" Mes antécédents : {', '.join(case.history)}."
+            text += f" {'Ses' if proxy else 'Mes'} antécédents : {', '.join(case.history)}."
     include_signs = not said or rng.random() < 0.5
     return f"{text}\n\n{_clinical_block(case, include_signs)}"
 
@@ -361,7 +371,7 @@ def render_dialogue(case: Case, rng: random.Random) -> list[Message]:
     if said and case.age >= ADULT_AGE:
         opening = f"Bonjour, je viens pour {rng.choice(case.spec.complaints)}."
     else:
-        opening = _patient_opening(case, rng)
+        opening, _ = _patient_opening(case, rng)
     return [
         Message(role="user", content=opening),
         Message(role="assistant", content=_question(case)),

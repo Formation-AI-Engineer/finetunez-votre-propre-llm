@@ -5,6 +5,8 @@
 #   (vérifié par les tests), `defaut` désignant le niveau « Tri M » sans critère modulateur ;
 # - une alternative décrit UNE façon de remplir le critère : signes observés par l'IOA,
 #   formulation du patient, constantes imposées (plages [min, max]), âge ou sexe imposés.
+# - une phrase de `patient` écrite `{tiers: "…"}` est dite par un proche (« Mon mari… ») :
+#   le récit donne alors l'âge et les antécédents à la troisième personne.
 #
 # Ces vignettes sont synthétiques et non validées cliniquement (voir docs/POINT_MENTOR.md).
 
@@ -25,7 +27,7 @@ motifs:
   # ---------------------------------------------------------------- CARDIO-CIRCULATOIRE
   - motif: "Arrêt cardiorespiratoire"
     plaintes: ["effondrement brutal à domicile", "arrêt cardiaque devant témoins"]
-    patient: ["Mon mari s'est effondré d'un coup, il ne répond plus et ne respire plus."]
+    patient: [{tiers: "Mon mari s'est effondré d'un coup, il ne répond plus et ne respire plus."}]
     question: "Est-ce qu'il respire et réagit quand on lui parle ?"
     age: [40, 85]
     sexe: M
@@ -470,7 +472,7 @@ motifs:
 
   - motif: "Comportement ébrieux / ivresse"
     plaintes: ["ivresse"]
-    patient: ["Mon ami a beaucoup bu, il est difficile à réveiller."]
+    patient: [{tiers: "Mon ami a beaucoup bu, il est difficile à réveiller."}]
     question: "Réagit-il quand on lui parle ?"
     age: [18, 60]
     sexe: M
@@ -489,7 +491,7 @@ motifs:
   # ------------------------------------------------------------------------- NEUROLOGIE
   - motif: "Altération de la conscience/coma"
     plaintes: ["somnolence inhabituelle", "patient difficile à réveiller"]
-    patient: ["Ma mère est très somnolente depuis ce matin, on n'arrive pas à la réveiller vraiment."]
+    patient: [{tiers: "Ma mère est très somnolente depuis ce matin, on n'arrive pas à la réveiller vraiment."}]
     question: "Ouvre-t-elle les yeux et répond-elle quand on lui parle ?"
     age: [60, 95]
     sexe: F
@@ -504,7 +506,7 @@ motifs:
   - motif: "Déficit moteur, sensitif, sensoriel ou du langage/AVC"
     plaintes: ["faiblesse d'un côté du corps", "difficultés à parler"]
     patient:
-      - "Mon mari n'arrive plus à parler correctement et sa bouche est de travers."
+      - {tiers: "Mon mari n'arrive plus à parler correctement et sa bouche est de travers."}
       - "Je n'arrive plus à bouger mon bras droit."
     question: "À quelle heure les symptômes ont-ils commencé ?"
     age: [50, 90]
@@ -522,7 +524,7 @@ motifs:
 
   - motif: "Convulsions"
     plaintes: ["crise convulsive"]
-    patient: ["Mon fils a fait une crise d'épilepsie, il a tremblé de partout."]
+    patient: [{tiers: "Mon frère a fait une crise d'épilepsie, il a tremblé de partout."}]
     question: "Est-il revenu complètement à lui depuis la crise ?"
     age: [16, 70]
     sexe: M
@@ -884,7 +886,7 @@ motifs:
   # ----------------------------------------------------------------------------- DIVERS
   - motif: "Hypothermie"
     plaintes: ["personne retrouvée au sol, froide"]
-    patient: ["On a retrouvé mon voisin par terre chez lui, il est glacé."]
+    patient: [{tiers: "On a retrouvé mon voisin par terre chez lui, il est glacé."}]
     question: "Depuis combien de temps était-il au sol ?"
     age: [70, 95]
     sexe: M
@@ -915,7 +917,7 @@ motifs:
 
   - motif: "Hypoglycémie"
     plaintes: ["hypoglycémie"]
-    patient: ["Mon mari diabétique est en sueur et ne répond pas bien."]
+    patient: [{tiers: "Mon mari diabétique est en sueur et ne répond pas bien."}]
     question: "Est-il conscient et peut-il avaler du sucre ?"
     age: [20, 85]
     sexe: M
