@@ -12,6 +12,9 @@ set -uo pipefail
 source scripts/kaggle/common.sh
 
 mkdir -p outputs/logs
+# Le clone survit d'un lancement à l'autre dans une session Kaggle : sans ce nettoyage, un run
+# qui plante laisserait afficher les résultats du lancement précédent.
+rm -rf outputs/sft/smoke-overfit outputs/sft/smoke-resume outputs/eval/smoke-overfit
 
 overfit() {
     CUDA_VISIBLE_DEVICES=0 "${PY[@]}" scripts/train_sft.py --name smoke-overfit --limit 100 \

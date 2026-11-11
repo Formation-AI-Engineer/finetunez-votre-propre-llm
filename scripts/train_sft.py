@@ -25,7 +25,7 @@ import torch
 import yaml
 from datasets import Dataset
 from peft import LoraConfig
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, Trainer
 from transformers.trainer_utils import get_last_checkpoint
 from trl import SFTConfig, SFTTrainer
 
@@ -33,6 +33,21 @@ from triage.evaluation import dataset_file
 from triage.training import apply_overrides, load_rows, sample_rows
 
 END_OF_TURN = "<|im_end|>"  # fin de tour du chat template Qwen3, jeton de fin appris au SFT
+
+
+class FullLogitsSFTTrainer(SFTTrainer):
+    """SFTTrainer dont la perte passe par la sortie complète du modèle (`lm_head`).
+
+    TRL calcule la perte par morceaux à partir de `lm_head.weight` directement, sans construire
+    la sortie complète : plus économe, mais les lignes de jetons entraînées par PEFT
+    (`trainable_token_indices`, enveloppe de `lm_head`) seraient ignorées en sortie, et TRL 1.17
+    plante d'ailleurs sur cette enveloppe (pas d'attribut `bias`). La perte de
+    `transformers.Trainer` appelle le modèle avec les `labels` : la sortie passe par l'enveloppe.
+    Plus de mémoire (152 000 scores par jeton) : lot par carte réduit, accumulation de gradient.
+    """
+
+    def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
+        return Trainer.compute_loss(self, model, inputs, return_outputs, num_items_in_batch)
 
 
 def git_commit() -> str:
@@ -164,6 +179,7 @@ def main() -> None:
         "save_steps": train_cfg.get("eval_steps", 500),
         "metric_for_best_model": "eval_loss",
         "greater_is_better": False,
+        "prediction_loss_only": True,  # validation : la perte seule, pas la sortie complète
     } | train_cfg
     if no_eval:
         # Petit run sans validation : rien à comparer, seul l'adaptateur final est écrit.
@@ -186,7 +202,8 @@ def main() -> None:
             },
         )
 
-    trainer = SFTTrainer(
+    trainer_cls = FullLogitsSFTTrainer if token_ids else SFTTrainer
+    trainer = trainer_cls(
         model=model,
         args=sft_config,
         train_dataset=Dataset.from_list(train_rows),

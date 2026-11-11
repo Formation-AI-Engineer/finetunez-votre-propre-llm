@@ -22,8 +22,11 @@ training:
   lr_scheduler_type: cosine
   warmup_steps: 0.05            # fraction du nombre total de pas (transformers 5)
   num_train_epochs: 3
-  per_device_train_batch_size: 8
-  per_device_eval_batch_size: 8
+  # Lot effectif de 8 : 4 par pas × 2 pas accumulés. La perte passe par la sortie complète du
+  # modèle (lora.trainable_tokens), environ 2,5 Gio par lot de 4 séquences de 1 024 jetons.
+  per_device_train_batch_size: 4
+  gradient_accumulation_steps: 2
+  per_device_eval_batch_size: 4
   max_length: 1024              # exemples plus longs retirés, jamais tronqués
   logging_steps: 10
   eval_strategy: steps

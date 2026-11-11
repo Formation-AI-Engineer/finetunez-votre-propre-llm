@@ -18,6 +18,8 @@ mkdir -p outputs/logs
 
 train_and_evaluate() {
     local gpu=$1 name=$2 overrides=$3
+    # Pas de reste d'un lancement précédent de la même session (checkpoints, résumés).
+    rm -rf "outputs/sft/$name" "outputs/eval/$name"
     # shellcheck disable=SC2086  # surcharges séparées par des espaces, volontairement
     CUDA_VISIBLE_DEVICES=$gpu "${PY[@]}" scripts/train_sft.py --name "$name" $overrides &&
         "${PY[@]}" scripts/evaluate.py --name "$name" --adapter "outputs/sft/$name/best" \
