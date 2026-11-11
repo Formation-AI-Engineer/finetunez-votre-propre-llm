@@ -52,6 +52,16 @@ def length(tokenizer, row: dict) -> int:
     return len(encoded["input_ids"])
 
 
+def special_token_ids(tokenizer, tokens: list[str]) -> dict[str, int]:
+    """Indices des jetons à entraîner ; erreur si l'un d'eux n'est pas un jeton unique du
+    vocabulaire (il serait découpé, et c'est un autre jeton qui serait entraîné)."""
+    ids = {t: tokenizer.convert_tokens_to_ids(t) for t in tokens}
+    unknown = [t for t, i in ids.items() if i is None or i == tokenizer.unk_token_id]
+    if unknown:
+        raise SystemExit(f"jetons absents du vocabulaire : {unknown}")
+    return ids
+
+
 def drop_too_long(tokenizer, rows: list[dict], max_length: int) -> tuple[list[dict], int]:
     """Retire les exemples trop longs : tronqués, ils perdraient la fin de la réponse, et le
     modèle apprendrait à ne pas terminer."""
@@ -126,7 +136,16 @@ def main() -> None:
     model = AutoModelForCausalLM.from_pretrained(
         config["model_id"], dtype=torch.bfloat16 if bf16 else torch.float16
     )
-    peft_config = LoraConfig(task_type="CAUSAL_LM", bias="none", **config["lora"])
+    lora = dict(config["lora"])
+    token_ids = special_token_ids(tokenizer, lora.pop("trainable_tokens", []))
+    peft_config = LoraConfig(
+        task_type="CAUSAL_LM",
+        bias="none",
+        # Lignes de la table d'embeddings entraînées ; table partagée avec la sortie
+        # (tie_word_embeddings), que PEFT met à jour en même temps.
+        trainable_token_indices=list(token_ids.values()) or None,
+        **lora,
+    )
 
     report_to = "wandb" if os.environ.get("WANDB_API_KEY") else "none"
     no_eval = train_cfg.get("eval_strategy", "no") == "no"
@@ -208,6 +227,7 @@ def main() -> None:
         "eval_examples": 0 if no_eval else len(eval_rows),
         "eval_dropped_too_long": eval_dropped,
         "template_checks": template_checks,
+        "trainable_tokens": token_ids,
         "training_settings": {k: v for k, v in settings.items() if k != "report_to"},
         "precision": "bf16" if bf16 else "fp16",
         "gpu": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "cpu",

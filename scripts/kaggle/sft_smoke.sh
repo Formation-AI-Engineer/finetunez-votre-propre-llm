@@ -4,7 +4,8 @@
 # cuda:0 — sur-apprentissage volontaire : 100 exemples, 15 époques, sans validation. La perte doit
 #          chuter vers 0 ; sinon la perte, le masque ou le taux d'apprentissage sont faux. Puis
 #          20 questions par tâche avec cet adaptateur : les réponses doivent se terminer par
-#          <|im_end|> (peu de réponses coupées) et suivre le format appris.
+#          <|im_end|> (peu de réponses coupées) et suivre le format appris. Sans l'entraînement
+#          des lignes de <|im_end|> (lora.trainable_tokens), elles étaient toutes coupées.
 # cuda:1 — reprise : run de 40 pas interrompu (kill) juste après le checkpoint du pas 20, puis
 #          relancé avec --resume. Il doit repartir du pas 20 et finir au pas 40.
 set -uo pipefail

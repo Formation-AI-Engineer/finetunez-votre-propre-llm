@@ -167,7 +167,11 @@ Plus rien ne bloque l'étape 1.
 - [ ] Petit run (~100 exemples) : la perte doit chuter jusqu'au sur-apprentissage volontaire
       (étape Kaggle `sft_smoke`, cuda:0)
 - [ ] Vérifier le rendu du chat template et le jeton de fin (`<|im_end|>`) : contrôle intégré à
-      `train_sft.py` (l'entraînement s'arrête s'il échoue), puis génération avec l'adaptateur
+      `train_sft.py` (l'entraînement s'arrête s'il échoue), puis génération avec l'adaptateur.
+      Smoke test du 11/11/2026 : rendu correct, mais 40/40 réponses sans fin. Dans Qwen3-Base,
+      `<|im_start|>`, `<|im_end|>`, `<think>` et `</think>` ont la même ligne d'embeddings, jamais
+      entraînée (table partagée avec la sortie) : ces 4 lignes sont désormais entraînées
+      (`lora.trainable_tokens`), à revérifier avec `sft_smoke`
 - [ ] Run complet avec suivi W&B : perte train / val, mémoire GPU, durée (étape Kaggle `sft`)
 - [ ] Faire varier `r`, le taux d'apprentissage et le nombre d'époques ; garder une trace de chaque essai
 - [ ] Checkpoints, reprise testée, graine, hyperparamètres et révision du dataset enregistrés

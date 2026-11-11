@@ -10,6 +10,11 @@ lora:
   lora_alpha: 32
   lora_dropout: 0.05
   target_modules: [q_proj, k_proj, v_proj, o_proj]
+  # Jetons du chat template jamais entraînés dans Qwen3-Base : leurs lignes de la table
+  # d'embeddings (partagée avec la sortie) sont identiques, si bien que le modèle ne peut pas
+  # distinguer <|im_end|> de <|im_start|> ou </think>, et ne s'arrête pas (smoke test du
+  # 11/11/2026 : 40/40 réponses coupées). Ces lignes seules sont entraînées, en plus de LoRA.
+  trainable_tokens: ["<|im_start|>", "<|im_end|>", "<think>", "</think>"]
 # Clés de `training` : arguments de trl.SFTConfig, passés tels quels (scripts/train_sft.py).
 # Environ 5 060 exemples / lot de 8 = 633 pas par époque, 1 900 pour 3 époques.
 training:
