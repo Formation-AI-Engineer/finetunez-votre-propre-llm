@@ -145,6 +145,36 @@ puisqu'un simple prompt avec exemples coûte bien moins cher. Limite : les exemp
 dans le même ordre (maximale, modérée, différée), ce qui pourrait pousser le modèle vers la
 dernière priorité vue. Le biais observé va en fait vers « modérée », la priorité du milieu.
 
+### Résultats (validation, 11/11/2026)
+
+Commit `108a9c3`, dataset `7dffce7`, fp16 sur Tesla T4. Les résumés complets sont dans
+`outputs/eval/base*/validation/summary.md`.
+
+| Triage (150 vignettes) | `base` | `base-fewshot` |
+|---|---|---|
+| Sous-triage des cas maximale | 83,3 % [72,6 ; 90,4] (55/66) | 69,7 % [57,8 ; 79,4] (46/66) |
+| Exactitude | 8,7 % [5,1 ; 14,3] | 44,0 % [36,3 ; 52,0] |
+| Sous-triage | 57,3 % | 36,0 % |
+| Sur-triage | 8,0 % | 18,0 % |
+| Réponses lisibles | 17,3 % | 96,7 % |
+
+| QCM, lecture tolérante | Exact match | Hamming | Lisibles |
+|---|---|---|---|
+| FrenchMedMCQA (50) | 12,0 % [5,6 ; 23,8] | 0,172 | 40,0 % |
+| MediQAl (150) | 12,7 % [8,3 ; 18,9] | 0,210 | 48,0 % |
+
+En lecture stricte, aucun QCM n'est lisible (0 %), ce qui est attendu avant le SFT.
+
+Ce qu'on en retient :
+
+- **Le format s'apprend avec 3 exemples** : 17 % de réponses lisibles en zero-shot, 97 % en
+  few-shot.
+- **Le triage, lui, ne s'apprend pas avec 3 exemples** : le modèle range presque tout en
+  « modérée », y compris 38 des 66 cas de priorité maximale. Le SFT doit battre `base-fewshot`,
+  c'est-à-dire 44 % d'exactitude et 70 % de sous-triage des cas maximale.
+- **Les connaissances QCM sont un plancher** : la moitié des réponses n'est pas lisible. Le SFT
+  devra rester au moins à ce niveau en lecture stricte (environ 12 % d'exact match).
+
 Pas de few-shot pour les QCM : avec 2 QCM résolus en exemple, le modèle de base **recopie les
 exemples** au lieu de répondre. Ses connaissances sont mesurées en zero-shot, en lecture tolérante.
 

@@ -154,8 +154,9 @@ Plus rien ne bloque l'étape 1.
 - [x] Activer le GPU Kaggle (pas de GPU sur le poste local) et installer `uv sync --extra train` :
       `notebooks/kaggle.ipynb` ; vérifié le 10/11/2026 : 2 × Tesla T4 (14,6 Gio, capacité 7.5),
       pilote 580.178.04, torch 2.14.1+cu126, Python 3.12.3. Pas de bf16 : entraîner en **fp16**
-- [~] Mesure de référence : évaluer Qwen3-1.7B-Base **avant** tout entraînement :
-      `scripts/evaluate.py` (zero-shot et few-shot), étape Kaggle `baseline`, à exécuter
+- [x] Mesure de référence : évaluer Qwen3-1.7B-Base **avant** tout entraînement :
+      `scripts/evaluate.py` (zero-shot et few-shot), étape Kaggle `baseline` ; résultats du
+      11/11/2026 (commit `108a9c3`, dataset `7dffce7`) dans `docs/EVALUATION.md`
 - [ ] Choisir et documenter le mode sans raisonnement (`enable_thinking=False`)
 
 ### Entraînement
