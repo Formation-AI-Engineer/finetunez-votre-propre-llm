@@ -136,8 +136,11 @@ def test_acceptance_is_undefined_without_maximale_cases():
         ("Réponses : a, d", {"A", "D"}),
         ("Réponse : a et c", {"A", "C"}),
         ("Bonne réponse : C\n- C. x", {"C"}),
+        ("Réponse : La réponse fausse est E. Survient 24 heures après", {"E"}),
+        ("La réponse la plus urgente est **B. Recherche de BK**.", {"B"}),
         # Pas de lettre isolée : rien n'est lu plutôt que deviner.
-        ("Réponse : La réponse fausse est E.", None),
+        ("La réponse est a priori fausse.", None),
+        ("La réponse est Aucune", None),
         ("Réponse : Aucune", None),
         ("Répondez en donnant la ou les bonnes propositions.", None),
     ],

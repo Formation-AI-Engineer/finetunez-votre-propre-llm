@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import random
+import re
 from collections import defaultdict
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, replace
@@ -60,6 +61,23 @@ def to_item(record: SFTRecord) -> EvalItem | None:
         messages=[m.model_dump() for m in record.prompt],
         expected=expected,
         style=meta.extra.get("style"),
+    )
+
+
+def dataset_file(dataset: dict, split: str) -> Path:
+    """Fichier SFT du dataset privé, à la révision fixée dans configs/sft.yaml (jeton HF_TOKEN)."""
+    import os
+
+    from huggingface_hub import hf_hub_download
+
+    return Path(
+        hf_hub_download(
+            dataset["repo_id"],
+            f"sft/{split}.jsonl",
+            repo_type="dataset",
+            revision=dataset["revision"],
+            token=os.environ.get("HF_TOKEN"),
+        )
     )
 
 
@@ -131,6 +149,31 @@ def with_examples(item: EvalItem, examples: list[SFTRecord]) -> EvalItem:
 # ----------------------------------------------------------------------------- notation
 
 
+def _normalize_line(line: str) -> str:
+    return re.sub(r"[\W_]+", " ", line).strip().lower()
+
+
+_OPTION_LINE = re.compile(r"\s*[A-E][.)]\s")
+
+
+def strip_echo(answer: str, item: EvalItem) -> str:
+    """Retire de la réponse les lignes de l'énoncé recopiées de la question, que le modèle de base
+    répète souvent avant de répondre : « (cochez la réponse fausse) … : » serait sinon lu comme
+    l'annonce de la réponse. Comparaison sans casse ni ponctuation. Les propositions (« A. … »)
+    restent : « La réponse correcte est :\n\n**D. …** » cite la proposition telle quelle, et sans
+    l'énoncé une proposition recopiée n'est précédée d'aucun « réponse … : »."""
+    question = {
+        _normalize_line(line)
+        for m in item.messages
+        if m["role"] == "user"
+        for line in m["content"].splitlines()
+        if not _OPTION_LINE.match(line)
+    }
+    question.discard("")
+    kept = [line for line in answer.splitlines() if _normalize_line(line) not in question]
+    return "\n".join(kept)
+
+
 def _rate(r: Rate) -> dict:
     low, high = r.interval
     return {"k": r.k, "n": r.n, "value": r.value, "low": low, "high": high}
@@ -173,7 +216,8 @@ def score(items: Iterable[EvalItem], answers: Mapping[str, str]) -> dict:
             expected = [frozenset(i.expected) for i in group]
             strict = mcq_scores(expected, [parse_mcq(answers.get(i.id, "")) for i in group])
             lenient = mcq_scores(
-                expected, [parse_mcq_lenient(answers.get(i.id, "")) for i in group]
+                expected,
+                [parse_mcq_lenient(strip_echo(answers.get(i.id, ""), i)) for i in group],
             )
             summary["qcm"][source] = {
                 "n": len(group),
@@ -188,12 +232,15 @@ def score(items: Iterable[EvalItem], answers: Mapping[str, str]) -> dict:
 
     # Quelques réponses illisibles par tâche (même en lecture tolérante pour les QCM), pour voir
     # tout de suite ce que le modèle écrit.
-    readers = {"triage": parse_assessment, "qcm": parse_mcq_lenient}
+    readers = {
+        "triage": lambda i: parse_assessment(answers.get(i.id, "")),
+        "qcm": lambda i: parse_mcq_lenient(strip_echo(answers.get(i.id, ""), i)),
+    }
     summary["unreadable_examples"] = {
         task: [
             {"id": i.id, "answer": answers.get(i.id, "")[:UNREADABLE_CHARS]}
             for i in items
-            if i.task == task and readers[task](answers.get(i.id, "")) is None
+            if i.task == task and readers[task](i) is None
         ][:UNREADABLE_SHOWN]
         for task in EVAL_TASKS
     }

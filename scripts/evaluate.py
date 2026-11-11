@@ -14,18 +14,17 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import subprocess
 import time
 from pathlib import Path
 
 import torch
 import yaml
-from huggingface_hub import hf_hub_download
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from triage.evaluation import (
     EvalItem,
+    dataset_file,
     load_items,
     pick_examples,
     score,
@@ -125,19 +124,6 @@ def generate(
                 done = start + len(batch)
                 print(f"  {task} : {done}/{len(group)}", flush=True)
     return answers, stats
-
-
-def dataset_file(dataset: dict, split: str) -> Path:
-    """Fichier SFT du dataset privé, à la révision fixée dans la configuration."""
-    return Path(
-        hf_hub_download(
-            dataset["repo_id"],
-            f"sft/{split}.jsonl",
-            repo_type="dataset",
-            revision=dataset["revision"],
-            token=os.environ.get("HF_TOKEN"),
-        )
-    )
 
 
 def main() -> None:

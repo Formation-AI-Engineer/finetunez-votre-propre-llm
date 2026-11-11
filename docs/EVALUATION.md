@@ -23,10 +23,20 @@ utilisé qu'une fois, sur l'adaptateur retenu.
   annoncée, c'est la plus grave des deux qui est retenue.
 - **QCM, lecture stricte** : `parse_mcq` lit `Bonne réponse : A` ou `Bonnes réponses : A, C`.
   Les lettres doivent être en majuscules et sur la même ligne. C'est le format appris au SFT.
-- **QCM, lecture tolérante** : `parse_mcq_lenient` lit aussi `Réponse : c`, `Réponses : a, d` ou
-  `La réponse correcte est : **B. …`. Elle mesure les connaissances d'un modèle qui n'a pas
-  appris le format, comme le modèle de base. Une lettre qui commence un mot n'est pas lue :
-  `Réponse : La réponse fausse est E` reste illisible plutôt que d'être deviné.
+- **QCM, lecture tolérante** : `parse_mcq_lenient` lit la première « réponse … : X » du texte :
+  `Réponse : c`, `Réponses : a, d`, `La réponse correcte est :` puis `**B. …` à la ligne suivante,
+  `La réponse la plus spécifique … est : D`. Sans deux-points, elle lit aussi `La réponse fausse
+  est E.`, mais seulement une majuscule sur la même ligne (`est a priori` n'est pas lu A). Elle
+  mesure les connaissances d'un modèle qui n'a pas appris le format, comme le modèle de base.
+  Deux garde-fous : une lettre qui commence un mot n'est pas lue (`Réponse : Aucune`), et les
+  lignes de l'énoncé que le modèle recopie sont retirées avant lecture (`strip_echo`) : sinon
+  `(cochez la réponse fausse) L'hématome … :` suivi de `A. Est une affection …` serait lu A. Les
+  propositions recopiées restent, car le modèle cite souvent sa réponse telle quelle
+  (`**D. L'action des corticoïdes**`). Les retirer aussi faisait perdre 19 réponses lisibles sur
+  200 lors de la mesure de référence.
+- **Non lu** : une réponse qui cite les propositions retenues sans les annoncer (`**B. …**`,
+  `**C. …**` en liste) reste illisible. Les explications citent aussi les propositions rejetées,
+  si bien que relever toutes les lettres citées serait une devinette.
 
 Une réponse qui ne suit pas le format est **illisible**. Elle n'est jamais écartée du calcul :
 elle compte comme une erreur, et le taux de réponses lisibles (`format_ok`) est rapporté à part.
@@ -98,6 +108,13 @@ Le dataset est lu sur le Hub à la révision fixée dans `configs/sft.yaml`.
 uv run --extra train python scripts/evaluate.py --name base                      # modèle de base
 uv run --extra train python scripts/evaluate.py --name base-fewshot --few-shot --batch-size 8
 uv run --extra train python scripts/evaluate.py --name sft --adapter outputs/sft/best
+```
+
+Si la lecture des réponses ou les métriques changent, `scripts/rescore.py` recalcule les résumés à
+partir de `predictions.jsonl`, sans GPU ni nouvelle génération :
+
+```bash
+uv run --extra data python scripts/rescore.py outputs/eval/base/validation
 ```
 
 Résultats dans `outputs/eval/<nom>/<split>/` : `predictions.jsonl` (réponse brute de chaque

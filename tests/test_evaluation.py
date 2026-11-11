@@ -2,7 +2,15 @@ import pytest
 
 from triage.data import vignettes
 from triage.data.sources import _mcq_record
-from triage.evaluation import load_items, pick_examples, score, to_markdown, with_examples
+from triage.evaluation import (
+    load_items,
+    pick_examples,
+    score,
+    strip_echo,
+    to_markdown,
+    with_examples,
+)
+from triage.metrics import parse_mcq_lenient
 
 
 @pytest.fixture
@@ -112,3 +120,40 @@ def test_lenient_reading_credits_answers_in_another_format(eval_file):
     assert q["format_ok"]["k"] == 0 and q["exact_match"]["k"] == 0
     assert q["exact_match_lenient"]["k"] == 1
     assert not summary["unreadable_examples"]["qcm"]
+
+
+def test_echoed_question_is_not_read_as_an_answer(tmp_path):
+    record = _mcq_record(
+        source="mediqal",
+        source_id="echo",
+        split="validation",
+        license="CC-BY-4.0",
+        context=None,
+        question="(cochez la réponse fausse) L'hématome sous-dural chronique :",
+        options={
+            "a": "Est une affection du sujet âgé",
+            "b": "Peut être bilatéral",
+            "e": "Survient",
+        },
+        correct=["e"],
+        subject=None,
+        extra={},
+    )
+    path = tmp_path / "qcm.jsonl"
+    path.write_text(record.model_dump_json() + "\n", encoding="utf-8")
+    (item,) = load_items(path)
+    # Recopie de l'énoncé, qui contient « réponse … : » suivi de la proposition A.
+    echo = (
+        "Question : (cochez la réponse fausse) L'hématome sous-dural chronique :\n\n"
+        "A. Est une affection du sujet âgé\nB. Peut être bilatéral"
+    )
+    assert parse_mcq_lenient(echo) == frozenset("A")  # le piège, sans retrait de l'écho
+    assert "hématome" not in strip_echo(echo, item)
+
+    summary = score([item], {item.id: echo})
+    assert summary["qcm"]["mediqal"]["readable_lenient"]["k"] == 0
+    summary = score([item], {item.id: echo + "\n\nLa réponse fausse est : **E. Survient**"})
+    assert summary["qcm"]["mediqal"]["exact_match_lenient"]["k"] == 1
+    # Une proposition citée telle quelle comme réponse n'est pas retirée comme écho.
+    summary = score([item], {item.id: echo + "\n\nLa réponse fausse est :\n\n**E. Survient**"})
+    assert summary["qcm"]["mediqal"]["exact_match_lenient"]["k"] == 1

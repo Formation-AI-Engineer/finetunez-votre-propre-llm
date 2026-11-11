@@ -24,11 +24,18 @@ _MCQ_HEADER = re.compile(
     r"[Bb]onnes? [Rr]éponses?[ \t]*:[ \t]*([A-E](?:[ \t]*(?:,|;|/|et)[ \t]*[A-E])*)\b"
 )
 # Lecture tolérante, pour mesurer les connaissances d'un modèle qui n'a pas appris le format :
-# « Réponse : c », « La réponse correcte est : **B. … »,  « Réponses : a, d ». La lettre ne doit pas
-# commencer un mot (« Réponse : La … » n'est pas lu comme A).
+# « Réponse : c », « La réponse correcte est :\n\n**B. … », « La réponse la plus spécifique … est :
+# D ». Entre « réponse » et les deux-points : du texte libre sur la même ligne. Après : une lettre
+# isolée, éventuellement en gras et sur la ligne suivante (« Réponse : La … » n'est pas lu comme A).
+# Sans deux-points (« La réponse fausse est E. », « … est **B. … ») : majuscule sur la même ligne
+# seulement, pour ne pas lire « est a priori » comme A.
+_LETTERS_END = r"(?![A-Za-zÀ-ÿ'’])"
 _MCQ_LENIENT = re.compile(
-    r"[Rr]éponses?(?:[ \t]+(?:correctes?|exactes?|justes?))?(?:[ \t]+(?:est|sont))?[ \t]*:"
-    r"[ \t]*\**[ \t]*([A-Ea-e](?:[ \t]*(?:,|;|/|et)[ \t]*[A-Ea-e])*)(?![A-Za-zÀ-ÿ'’])"
+    r"[Rr]éponses?\b[^:\n]{0,100}:\s*\**[ \t]*"
+    r"(?P<colon>[A-Ea-e](?:[ \t]*(?:,|;|/|et)[ \t]*[A-Ea-e])*)"
+    + _LETTERS_END
+    + r"|[Rr]éponses?\b[^:\n]{0,100}?\best[ \t]+(?:la[ \t]+)?\**[ \t]*"
+    r"(?P<est>[A-E](?:[ \t]*(?:,|;|/|et)[ \t]*[A-E])*)" + _LETTERS_END
 )
 
 
@@ -144,11 +151,18 @@ def parse_mcq(text: str) -> frozenset[str] | None:
 
 
 def parse_mcq_lenient(text: str) -> frozenset[str] | None:
-    """Lettres de la première « réponse : X » du texte, quel que soit le format exact."""
-    match = _MCQ_HEADER.search(text) or _MCQ_LENIENT.search(text)
-    if not match:
+    """Lettres de la première « réponse … : X » du texte, quel que soit le format exact.
+
+    Si le modèle recopie la question, retirer d'abord les lignes recopiées
+    (`triage.evaluation.strip_echo`) : sinon « (cochez la réponse fausse) … :\n\nA. … » serait lu A.
+    """
+    if match := _MCQ_HEADER.search(text):
+        letters = match.group(1)
+    elif match := _MCQ_LENIENT.search(text):
+        letters = match.group("colon") or match.group("est")
+    else:
         return None
-    letters = re.sub(r"\bet\b", " ", match.group(1)).upper()
+    letters = re.sub(r"\bet\b", " ", letters).upper()
     return frozenset(re.findall(r"[A-E]", letters))
 
 
