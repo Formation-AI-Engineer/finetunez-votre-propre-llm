@@ -107,7 +107,7 @@ Le dataset est lu sur le Hub à la révision fixée dans `configs/sft.yaml`.
 ```bash
 uv run --extra train python scripts/evaluate.py --name base                      # modèle de base
 uv run --extra train python scripts/evaluate.py --name base-fewshot --few-shot --batch-size 8
-uv run --extra train python scripts/evaluate.py --name sft --adapter outputs/sft/best
+uv run --extra train python scripts/evaluate.py --name sft --adapter outputs/sft/<nom>/best
 ```
 
 Si la lecture des réponses ou les métriques changent, `scripts/rescore.py` recalcule les résumés à

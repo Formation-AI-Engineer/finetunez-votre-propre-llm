@@ -3,7 +3,7 @@
 Usage (sur GPU) :
   uv run --extra train python scripts/evaluate.py --name base                 # modèle de base
   uv run --extra train python scripts/evaluate.py --name base-fewshot --few-shot --batch-size 8
-  uv run --extra train python scripts/evaluate.py --name sft --adapter outputs/sft/best
+  uv run --extra train python scripts/evaluate.py --name sft --adapter outputs/sft/<nom>/best
   options : --split validation|test, --limit 20 (essai rapide), --batch-size 16
 
 Écrit dans outputs/eval/<name>/<split>/ : predictions.jsonl (réponse brute de chaque question),

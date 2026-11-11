@@ -157,15 +157,21 @@ Plus rien ne bloque l'étape 1.
 - [x] Mesure de référence : évaluer Qwen3-1.7B-Base **avant** tout entraînement :
       `scripts/evaluate.py` (zero-shot et few-shot), étape Kaggle `baseline` ; résultats du
       11/11/2026 (commit `108a9c3`, dataset `7dffce7`) dans `docs/EVALUATION.md`
-- [ ] Choisir et documenter le mode sans raisonnement (`enable_thinking=False`)
+- [x] Choisir et documenter le mode sans raisonnement (`enable_thinking=False`) : même rendu à
+      l'entraînement (`chat_template_kwargs`, `src/triage/training.py`) et à l'évaluation ; le
+      prompt finit par un bloc `<think></think>` vide, préfixe exact de prompt + réponse (vérifié)
 
 ### Entraînement
-- [ ] Script SFT : Transformers + PEFT + TRL, configuré par `configs/sft.yaml`
+- [~] Script SFT : Transformers + PEFT + TRL, configuré par `configs/sft.yaml` :
+      `scripts/train_sft.py` (surcharges `--set`, `--limit`, `--resume`), à valider sur Kaggle
 - [ ] Petit run (~100 exemples) : la perte doit chuter jusqu'au sur-apprentissage volontaire
-- [ ] Vérifier le rendu du chat template et le jeton de fin (`<|im_end|>`)
-- [ ] Run complet avec suivi W&B : perte train / val, mémoire GPU, durée
+      (étape Kaggle `sft_smoke`, cuda:0)
+- [ ] Vérifier le rendu du chat template et le jeton de fin (`<|im_end|>`) : contrôle intégré à
+      `train_sft.py` (l'entraînement s'arrête s'il échoue), puis génération avec l'adaptateur
+- [ ] Run complet avec suivi W&B : perte train / val, mémoire GPU, durée (étape Kaggle `sft`)
 - [ ] Faire varier `r`, le taux d'apprentissage et le nombre d'époques ; garder une trace de chaque essai
 - [ ] Checkpoints, reprise testée, graine, hyperparamètres et révision du dataset enregistrés
+      (`outputs/sft/<nom>/run.json` ; reprise après interruption : `sft_smoke`, cuda:1)
 
 ### Validation intermédiaire
 - [ ] Évaluation automatique : exactitude sur les QCM, niveau de triage sur les vignettes

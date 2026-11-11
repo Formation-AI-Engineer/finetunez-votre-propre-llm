@@ -1,5 +1,5 @@
 # Point de départ à ajuster après les petits runs de validation (étape 2).
-sft_adapter: outputs/sft/best
+sft_adapter: outputs/sft/sft-r16-lr2e-4/best  # adaptateur SFT retenu (à confirmer après comparaison)
 seed: 42
 training:
   beta: 0.1
