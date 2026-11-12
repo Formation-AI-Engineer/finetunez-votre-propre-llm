@@ -194,3 +194,51 @@ questions par tâche (10/11/2026) :
 
 Les sorties dégénérées sont un comportement du modèle de base, pas un débordement numérique :
 **l'inférence en fp16 est retenue**, plus de deux fois plus rapide.
+
+## Après le SFT (validation, 12/11/2026)
+
+Commit `737b4b0`, dataset `7dffce7`, fp16 sur Tesla T4. Deux runs identiques sauf le taux
+d'apprentissage : LoRA r = 16, 3 époques (1 899 pas, lot effectif de 8), planning cosinus avec
+5 % de warmup. Résumés dans `outputs/eval/sft-*/validation/summary.md`, journaux d'entraînement
+dans `outputs/sft/sft-*/run.json`.
+
+| Triage (150 vignettes) | `base-fewshot` | `sft-r16-lr2e-4` | `sft-r16-lr1e-4` |
+|---|---|---|---|
+| Sous-triage des cas maximale (≤ 5 %) | 69,7 % (46/66) | **10,6 % [5,2 ; 20,3]** (7/66) | 15,2 % [8,4 ; 25,7] (10/66) |
+| Exactitude (≥ 75 %) | 44,0 % | **94,7 % [89,8 ; 97,3]** | 88,0 % [81,8 ; 92,3] |
+| Sous-triage | 36,0 % | 4,7 % | 6,7 % |
+| Sur-triage | 18,0 % | 0,7 % | 5,3 % |
+| Réponses lisibles | 96,7 % | 100 % | 100 % |
+
+| QCM, lecture stricte | `base` (tolérante) | `sft-r16-lr2e-4` | `sft-r16-lr1e-4` |
+|---|---|---|---|
+| FrenchMedMCQA (50) | 12,0 % | **48,0 % [34,8 ; 61,5]** | 44,0 % [31,2 ; 57,7] |
+| MediQAl (150) | 12,7 % | 35,3 % [28,1 ; 43,3] | 36,7 % [29,4 ; 44,6] |
+
+Toutes les réponses sont lisibles en lecture stricte, et aucune n'est coupée (0/350).
+
+| Entraînement | `sft-r16-lr2e-4` | `sft-r16-lr1e-4` |
+|---|---|---|
+| Perte de validation, pas 100 → fin | 0,611 → **0,397** | 0,673 → 0,404 |
+| Meilleur checkpoint | le dernier (1 899) | le dernier (1 899) |
+| Durée, mémoire de pointe | 138 min, 11,3 Gio | 133 min, 11,3 Gio |
+
+Ce qu'on en retient :
+
+- **`sft-r16-lr2e-4` est retenu**. Il converge plus vite et plus bas en 3 époques, sans
+  instabilité. Sa perte de validation plafonne à partir du pas 1 200 environ, sans remonter : pas
+  de sur-apprentissage. À 1e-4, la perte baisse encore au dernier pas : 3 époques ne suffisent
+  pas à ce taux.
+- **Pas d'oubli des connaissances** : les QCM progressent, de 12 % à 35-48 %.
+- **Seul le seuil de sous-triage des cas maximale n'est pas atteint** (10,6 % pour ≤ 5 %). Les 7
+  erreurs classent toutes un cas maximale en « modérée », jamais en « différée », et le run à
+  1e-4 les commet aussi :
+  - 2 escalades par les constantes (FR 44/min dans une crise d'angoisse, PA 68/37 mmHg dans une
+    phlébite) : le modèle applique le critère du motif et ignore la constante vitale. Ces
+    vignettes sont rares à l'entraînement (88 sur 1 565) ; 11 des 13 de la validation sont
+    réussies ;
+  - 5 critères de niveau 2 propres au motif : morsure de serpent, allergie avec dyspnée,
+    traumatisme à haute vélocité, fièvre ≥ 40 °C ou purpura, AES VIH de moins de 48 h.
+
+  C'est la cible du DPO. Avec 66 cas maximale, même 3 erreurs donneraient un intervalle trop large
+  pour garantir 5 % : la conclusion finale portera sur le jeu de test.
