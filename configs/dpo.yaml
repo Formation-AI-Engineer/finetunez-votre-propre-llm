@@ -6,7 +6,7 @@ dataset:
   revision: 7dffce7d0494094a0197f67a3085d8823fdb6d9f
 # Adaptateur SFT retenu (docs/EVALUATION.md, « Après le SFT »), publié en privé sur le Hub par
 # scripts/publish_adapter.py : fusionné dans le modèle avant le DPO, il en est aussi la référence.
-sft_adapter: hf://lcamara/triage-chsa-adapters/sft-r16-lr2e-4@A_RENSEIGNER
+sft_adapter: hf://lcamara/triage-chsa-adapters/sft-r16-lr2e-4@8f0cbc488afe2dce1c12bb8952cd2507e3f38cae
 # Nouvel adaptateur, entraîné par-dessus le modèle SFT fusionné. Pas de lignes de jetons à
 # entraîner : celles du SFT sont fusionnées dans les poids.
 lora:
