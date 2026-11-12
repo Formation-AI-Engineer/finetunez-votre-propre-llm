@@ -25,5 +25,7 @@ for path in sys.argv[1:]:
     for key in ("loss", "rewards/accuracies", "rewards/margins", "logps/chosen", "logps/rejected"):
         print(f"  entraînement {key:20} {ends(train.get(key, []))}")
     for name, series in r["eval"].items():
+        if not series:  # run sans validation
+            continue
         values = {k: [round(x, 3) for x in v] for k, v in series.items()}
         print(f"  validation {name} ({r['eval_pairs'].get(name)} paires) : {values}")

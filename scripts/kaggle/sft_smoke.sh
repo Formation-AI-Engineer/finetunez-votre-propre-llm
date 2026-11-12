@@ -79,7 +79,7 @@ if run.exists():
           f"{r['minutes']} min, {r['peak_gpu_memory_gib']} Gio")
 EOF
 [ -f outputs/eval/smoke-overfit/validation/summary.md ] &&
-    sed -n '1,/^## Exemples/p' outputs/eval/smoke-overfit/validation/summary.md
+    cat outputs/eval/smoke-overfit/validation/summary.md
 
 echo "==== Reprise (cuda:1)"
 grep -E "^Reprise|Interrompu|s'est arrêté" outputs/logs/sft_smoke_resume.log

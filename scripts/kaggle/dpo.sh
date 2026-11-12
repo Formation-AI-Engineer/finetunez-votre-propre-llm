@@ -54,6 +54,6 @@ for name in "${names[@]}"; do
     echo "==== $name"
     "${PY[@]}" scripts/kaggle/show_dpo_run.py "outputs/dpo/$name/run.json"
     summary="outputs/eval/$name/validation/summary.md"
-    [ -f "$summary" ] && sed -n '1,/^## Exemples/p' "$summary"
+    [ -f "$summary" ] && sed -n '1,/^## Exemples/p' "$summary" && grep "^Réponses coupées" "$summary"
 done
 exit "$status"

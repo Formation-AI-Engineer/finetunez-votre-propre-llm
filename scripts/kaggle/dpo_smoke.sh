@@ -70,8 +70,9 @@ echo "==== Sur-apprentissage (cuda:0)"
 grep -E "^---- (contrôles|fusion)|trainable params|paires d'entraînement" \
     outputs/logs/dpo_smoke_overfit.log
 "${PY[@]}" scripts/kaggle/show_dpo_run.py outputs/dpo/smoke-dpo-overfit/run.json
-[ -f outputs/eval/smoke-dpo-overfit/validation/summary.md ] &&
-    sed -n '1,/^## Exemples/p' outputs/eval/smoke-dpo-overfit/validation/summary.md
+# Résumé complet : avec des réponses illisibles, la ligne des réponses coupées vient après les
+# exemples, que la sélection jusqu'à « ## Exemples » laissait de côté.
+cat outputs/eval/smoke-dpo-overfit/validation/summary.md 2>/dev/null
 
 echo "==== Réglages réels, 30 pas avec reprise (cuda:1)"
 grep -E "^Reprise|Interrompu|s'est arrêté" outputs/logs/dpo_smoke_real.log
