@@ -207,8 +207,15 @@ Plus rien ne bloque l'étape 1.
 
 **À la fin :** modèle aligné, gain mesuré par rapport au SFT seul, poids finaux disponibles.
 
-- [ ] Script DPO : reprise de l'adaptateur SFT avec `is_trainable=True`, `configs/dpo.yaml`
+- [~] Script DPO : `scripts/train_dpo.py`, configuré par `configs/dpo.yaml`, à valider sur Kaggle
+      (étape `dpo_smoke`). L'adaptateur SFT n'est pas repris avec `is_trainable=True` : il est
+      **fusionné** dans le modèle (contrôle : mêmes prédictions avant et après), puis un nouvel
+      adaptateur LoRA est entraîné. La référence du DPO est ainsi le modèle SFT, avec ses lignes
+      de jetons : TRL les aurait perdues dans sa copie de référence et dans sa perte fusionnée
+- [ ] Publier l'adaptateur SFT retenu en privé sur le Hub (`scripts/publish_adapter.py`) : Kaggle
+      le télécharge à une révision fixe (`sft_adapter` dans `configs/dpo.yaml`)
 - [ ] Petit run : `rewards/accuracies` doit monter et `rewards/margins` s'écarter de 0
+      (étape Kaggle `dpo_smoke`, avec test de reprise)
 - [ ] Faire varier `beta` et le taux d'apprentissage ; surveiller `logps/chosen`
 - [ ] Contrôler le biais de longueur (catégorie `length` d'UltraMedical, `loss_type="sigmoid_norm"`)
 - [ ] Comparer base / SFT / SFT + DPO sur les mêmes jeux, sécurité comprise

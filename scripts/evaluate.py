@@ -4,6 +4,9 @@ Usage (sur GPU) :
   uv run --extra train python scripts/evaluate.py --name base                 # modèle de base
   uv run --extra train python scripts/evaluate.py --name base-fewshot --few-shot --batch-size 8
   uv run --extra train python scripts/evaluate.py --name sft --adapter outputs/sft/<nom>/best
+  uv run --extra train python scripts/evaluate.py --name dpo \
+      --adapter hf://<utilisateur>/triage-chsa-adapters/<sft>@<révision> \
+      --adapter outputs/dpo/<nom>/best
   options : --split validation|test, --limit 20 (essai rapide), --batch-size 16
 
 Écrit dans outputs/eval/<name>/<split>/ : predictions.jsonl (réponse brute de chaque question),
@@ -32,6 +35,7 @@ from triage.evaluation import (
     with_examples,
     write_json,
 )
+from triage.training import resolve_adapter
 
 # Longueur maximale de la réponse. Corrigés de validation (tokenizer Qwen3) : au plus 217 jetons
 # pour une vignette, 112 pour un QCM. Marge d'environ 1,5 ; au-delà on coupe, ce qui ne gêne pas
@@ -56,14 +60,20 @@ def pick_dtype(name: str, device: str) -> torch.dtype:
     return {"fp16": torch.float16, "bf16": torch.bfloat16, "fp32": torch.float32}[name]
 
 
-def load_model(model_id: str, adapter: str | None, dtype: torch.dtype, device: str):
+def load_model(model_id: str, adapters: list[str], dtype: torch.dtype, device: str):
+    """Modèle de base et adaptateurs empilés dans l'ordre : chacun, sauf le dernier, est fusionné
+    dans les poids avant de charger le suivant. L'adaptateur DPO a été entraîné sur le modèle
+    SFT fusionné (scripts/train_dpo.py) : il se charge après l'adaptateur SFT."""
     tokenizer = AutoTokenizer.from_pretrained(model_id)
     tokenizer.padding_side = "left"  # en génération, le texte doit finir au même endroit
     model = AutoModelForCausalLM.from_pretrained(model_id, dtype=dtype, device_map=device)
-    if adapter:
+    if adapters:
         from peft import PeftModel
 
-        model = PeftModel.from_pretrained(model, adapter)
+        for i, adapter in enumerate(adapters):
+            model = PeftModel.from_pretrained(model, resolve_adapter(adapter))
+            if i < len(adapters) - 1:
+                model = model.merge_and_unload()
     model.eval()
     return tokenizer, model
 
@@ -132,7 +142,13 @@ def main() -> None:
     )
     parser.add_argument("--name", required=True, help="nom du run (base, sft, dpo…)")
     parser.add_argument("--config", default="configs/sft.yaml")
-    parser.add_argument("--adapter", help="adaptateur LoRA à charger sur le modèle de base")
+    parser.add_argument(
+        "--adapter",
+        action="append",
+        default=[],
+        dest="adapters",
+        help="adaptateur LoRA (dossier ou hf://…@révision) ; répétable : SFT puis DPO",
+    )
     parser.add_argument("--split", default="validation", choices=("validation", "test"))
     parser.add_argument("--limit", type=int, help="au plus n questions par tâche (essai)")
     parser.add_argument("--batch-size", type=int, default=16)
@@ -159,7 +175,7 @@ def main() -> None:
     print(f"{len(items)} questions ({data_path.name}) -> {out_dir}")
 
     dtype = pick_dtype(args.dtype, args.device)
-    tokenizer, model = load_model(config["model_id"], args.adapter, dtype, args.device)
+    tokenizer, model = load_model(config["model_id"], args.adapters, dtype, args.device)
     start = time.time()
     answers, stats = generate(
         tokenizer, model, items, args.batch_size, out_dir / "predictions.jsonl"
@@ -170,7 +186,7 @@ def main() -> None:
     summary["run"] = {
         "name": args.name,
         "model_id": config["model_id"],
-        "adapter": args.adapter,
+        "adapters": args.adapters,
         "split": args.split,
         "limit": args.limit,
         "few_shot": args.few_shot,

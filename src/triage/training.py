@@ -1,8 +1,10 @@
 """Préparation de l'entraînement, sans dépendance GPU (testée en local).
 
 - surcharges de configuration en ligne de commande : `--set training.learning_rate=1e-4` ;
-- lignes d'entraînement au format conversationnel « prompt / completion » de TRL ;
-- sous-échantillon reproductible pour les petits runs.
+- lignes d'entraînement aux formats conversationnels de TRL : « prompt / completion » (SFT),
+  « prompt / chosen / rejected » (DPO) ;
+- sous-échantillon reproductible pour les petits runs ;
+- emplacement d'un adaptateur : dossier local ou dépôt privé du Hub (`hf://…`).
 """
 
 from __future__ import annotations
@@ -16,8 +18,12 @@ from pathlib import Path
 
 import yaml
 
-# Sections de configs/sft.yaml qu'une surcharge peut modifier.
-SECTIONS = ("model_id", "seed", "dataset", "lora", "training")
+# Sections de configs/sft.yaml et configs/dpo.yaml qu'une surcharge peut modifier.
+SECTIONS = ("model_id", "seed", "dataset", "sft_adapter", "lora", "training")
+
+# Sans raisonnement (mode « non-thinking » de Qwen3) : transmis au chat template pour chaque
+# exemple ; le prompt se termine par un bloc <think></think> vide, comme à l'évaluation.
+NO_THINKING = {"enable_thinking": False}
 
 
 def apply_overrides(config: dict, overrides: list[str]) -> dict:
@@ -62,7 +68,29 @@ def load_rows(path: Path) -> tuple[list[dict], Counter]:
                 {
                     "prompt": record["prompt"],
                     "completion": record["completion"],
-                    "chat_template_kwargs": {"enable_thinking": False},
+                    "chat_template_kwargs": NO_THINKING,
+                }
+            )
+            sources[record["metadata"]["source"]] += 1
+    return rows, sources
+
+
+def load_preference_rows(path: Path) -> tuple[list[dict], Counter]:
+    """Paires « prompt / chosen / rejected » de dpo/<split>.jsonl, et leur nombre par source.
+
+    Même rendu sans raisonnement qu'au SFT (`chat_template_kwargs`, lu par le DPOTrainer de TRL).
+    La source est gardée (`source`) pour suivre à part les paires de triage en français."""
+    rows, sources = [], Counter()
+    with path.open(encoding="utf-8") as f:
+        for line in f:
+            record = json.loads(line)
+            rows.append(
+                {
+                    "prompt": record["prompt"],
+                    "chosen": record["chosen"],
+                    "rejected": record["rejected"],
+                    "chat_template_kwargs": NO_THINKING,
+                    "source": record["metadata"]["source"],
                 }
             )
             sources[record["metadata"]["source"]] += 1
@@ -75,3 +103,36 @@ def sample_rows(rows: list[dict], n: int | None, seed: int) -> list[dict]:
         return rows
     keep = sorted(random.Random(seed).sample(range(len(rows)), n))
     return [rows[i] for i in keep]
+
+
+def resolve_adapter(spec: str) -> str:
+    """Dossier local d'un adaptateur. `spec` est un chemin local, ou un dossier d'un dépôt de
+    modèle du Hub à une révision fixe : `hf://<utilisateur>/<dépôt>/<dossier>@<révision>`,
+    téléchargé avec le jeton HF_TOKEN (dépôt privé)."""
+    repo_id, subfolder, revision = parse_hub_spec(spec)
+    if repo_id is None:
+        return spec
+    import os
+
+    from huggingface_hub import snapshot_download
+
+    root = snapshot_download(
+        repo_id,
+        revision=revision,
+        allow_patterns=[f"{subfolder}/*"],
+        token=os.environ.get("HF_TOKEN"),
+    )
+    return str(Path(root) / subfolder)
+
+
+def parse_hub_spec(spec: str) -> tuple[str | None, str | None, str | None]:
+    """(dépôt, dossier, révision) d'un `hf://utilisateur/dépôt/dossier@révision` ; (None, None,
+    None) pour un chemin local. La révision est obligatoire : sans elle, l'adaptateur chargé
+    pourrait changer d'un run à l'autre."""
+    if not spec.startswith("hf://"):
+        return None, None, None
+    path, sep, revision = spec.removeprefix("hf://").partition("@")
+    parts = path.strip("/").split("/")
+    if not sep or not revision or len(parts) < 3:
+        raise ValueError(f"attendu hf://utilisateur/dépôt/dossier@révision : {spec!r}")
+    return "/".join(parts[:2]), "/".join(parts[2:]), revision

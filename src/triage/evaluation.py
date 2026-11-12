@@ -64,8 +64,9 @@ def to_item(record: SFTRecord) -> EvalItem | None:
     )
 
 
-def dataset_file(dataset: dict, split: str) -> Path:
-    """Fichier SFT du dataset privé, à la révision fixée dans configs/sft.yaml (jeton HF_TOKEN)."""
+def dataset_file(dataset: dict, split: str, kind: str = "sft") -> Path:
+    """Fichier `kind/split.jsonl` (kind : sft ou dpo) du dataset privé, à la révision fixée dans
+    la configuration (jeton HF_TOKEN)."""
     import os
 
     from huggingface_hub import hf_hub_download
@@ -73,7 +74,7 @@ def dataset_file(dataset: dict, split: str) -> Path:
     return Path(
         hf_hub_download(
             dataset["repo_id"],
-            f"sft/{split}.jsonl",
+            f"{kind}/{split}.jsonl",
             repo_type="dataset",
             revision=dataset["revision"],
             token=os.environ.get("HF_TOKEN"),

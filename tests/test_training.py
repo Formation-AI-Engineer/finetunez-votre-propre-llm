@@ -2,7 +2,14 @@ import json
 
 import pytest
 
-from triage.training import apply_overrides, load_rows, sample_rows
+from triage.training import (
+    apply_overrides,
+    load_preference_rows,
+    load_rows,
+    parse_hub_spec,
+    resolve_adapter,
+    sample_rows,
+)
 
 CONFIG = {
     "model_id": "Qwen/Qwen3-1.7B-Base",
@@ -64,3 +71,43 @@ def test_sample_is_reproducible_and_keeps_order():
     assert [r["i"] for r in a] == sorted(r["i"] for r in a)
     assert len(a) == 10
     assert sample_rows(rows, None, seed=1) is rows
+
+
+def test_preference_rows_keep_pair_and_source(tmp_path):
+    record = {
+        "prompt": [{"role": "user", "content": "Vignette"}],
+        "chosen": [{"role": "assistant", "content": "Niveau de priorité : MAXIMALE"}],
+        "rejected": [{"role": "assistant", "content": "Niveau de priorité : MODÉRÉE"}],
+        "metadata": {"source": "french_vignettes", "task": "preference"},
+    }
+    path = tmp_path / "train.jsonl"
+    path.write_text(json.dumps(record) + "\n", encoding="utf-8")
+    rows, sources = load_preference_rows(path)
+    assert rows == [
+        {
+            "prompt": record["prompt"],
+            "chosen": record["chosen"],
+            "rejected": record["rejected"],
+            "chat_template_kwargs": {"enable_thinking": False},
+            "source": "french_vignettes",
+        }
+    ]
+    assert sources == {"french_vignettes": 1}
+
+
+def test_hub_spec_is_parsed_and_local_path_kept():
+    assert parse_hub_spec("hf://lcamara/adapters/sft-r16-lr2e-4@abc123") == (
+        "lcamara/adapters",
+        "sft-r16-lr2e-4",
+        "abc123",
+    )
+    assert parse_hub_spec("outputs/sft/x/best") == (None, None, None)
+    assert resolve_adapter("outputs/sft/x/best") == "outputs/sft/x/best"
+
+
+@pytest.mark.parametrize(
+    "spec", ["hf://lcamara/adapters/sft", "hf://lcamara/adapters@abc", "hf://lcamara/adapters/sft@"]
+)
+def test_hub_spec_requires_folder_and_revision(spec):
+    with pytest.raises(ValueError):
+        parse_hub_spec(spec)

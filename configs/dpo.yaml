@@ -1,10 +1,36 @@
-# Point de départ à ajuster après les petits runs de validation (étape 2).
-sft_adapter: outputs/sft/sft-r16-lr2e-4/best  # adaptateur SFT retenu (à confirmer après comparaison)
+# DPO (étape 3) : scripts/train_dpo.py. Point de départ à ajuster après le petit run (dpo_smoke).
+model_id: Qwen/Qwen3-1.7B-Base
 seed: 42
+dataset:
+  repo_id: lcamara/triage-chsa
+  revision: 7dffce7d0494094a0197f67a3085d8823fdb6d9f
+# Adaptateur SFT retenu (docs/EVALUATION.md, « Après le SFT »), publié en privé sur le Hub par
+# scripts/publish_adapter.py : fusionné dans le modèle avant le DPO, il en est aussi la référence.
+sft_adapter: hf://lcamara/triage-chsa-adapters/sft-r16-lr2e-4@A_RENSEIGNER
+# Nouvel adaptateur, entraîné par-dessus le modèle SFT fusionné. Pas de lignes de jetons à
+# entraîner : celles du SFT sont fusionnées dans les poids.
+lora:
+  r: 16
+  lora_alpha: 32
+  lora_dropout: 0.0             # le DPOTrainer désactive le dropout de toute façon (disable_dropout)
+  target_modules: [q_proj, k_proj, v_proj, o_proj]
+# Clés de `training` : arguments de trl.DPOConfig, passés tels quels.
+# 2 300 paires / lot de 8 = environ 288 pas pour 1 époque.
 training:
-  beta: 0.1
+  beta: 0.1                     # écart toléré au modèle SFT : plus petit, le modèle s'en éloigne plus
+  loss_type: [sigmoid]          # DPO standard ; [sigmoid_norm] : normalisée par la longueur
   learning_rate: 1.0e-5
+  lr_scheduler_type: cosine
+  warmup_steps: 0.1             # fraction du nombre total de pas
   num_train_epochs: 1
-  per_device_train_batch_size: 4
-  max_length: 1024
-  loss_type: [sigmoid]
+  per_device_train_batch_size: 4   # 4 paires, soit 8 séquences, plus 8 passes de référence
+  gradient_accumulation_steps: 2
+  per_device_eval_batch_size: 4
+  max_length: 1024              # paires plus longues retirées, jamais tronquées
+  logging_steps: 5
+  eval_strategy: steps
+  eval_steps: 50                # validation (triage et médicale) et checkpoint tous les 50 pas
+  save_total_limit: 2
+  # Pas de sélection par la perte DPO : l'adaptateur retenu est le dernier, puis les runs sont
+  # comparés par scripts/evaluate.py sur la validation (triage, QCM), comme pour le SFT.
+  load_best_model_at_end: false
