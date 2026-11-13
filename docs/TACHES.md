@@ -232,8 +232,8 @@ Plus rien ne bloque l'étape 1.
       choix (`docs/DECISIONS.md`, point 4)
 - [x] Contrôler le biais de longueur (catégorie `length` d'UltraMedical, `loss_type="sigmoid_norm"`) :
       pas de biais (triage 587 → 581 caractères, QCM 109 → 113), `sigmoid_norm` inutile
-- [~] Comparer base / SFT / SFT + DPO sur les mêmes jeux, sécurité comprise : validation faite,
-      avec et sans les règles sur les constantes ; jeu de sécurité et jeu de test à faire.
+- [x] Comparer base / SFT / SFT + DPO sur les mêmes jeux, sécurité comprise : validation, jeu
+      de sécurité et jeu de test (SFT et SFT + DPO), avec et sans garde-fous.
       Adaptateur retenu : `dpo-b0.1-lr3e-5` (0/66 cas maximale manqués avec les règles,
       10 % de sur-triage ; `docs/DECISIONS.md`). Jeu de test : étape Kaggle `final`
 - [x] Adaptateur DPO proposé publié en privé : `hf://lcamara/triage-chsa-adapters/dpo-b0.1-lr3e-5`,
@@ -244,10 +244,13 @@ Plus rien ne bloque l'étape 1.
       `docs/DECISIONS.md`, point 6)
 - [x] Vérifier que le français n'a pas régressé (paires DPO majoritairement en anglais) : QCM
       français stables (48,0 % et 34-35 %), format intact
-- [~] Fusionner l'adaptateur et publier les poids finaux (`merge_and_unload`) :
+- [x] Fusionner l'adaptateur et publier les poids finaux (`merge_and_unload`) :
       `scripts/merge_final.py` (fusion fp32, contrôle contre les adaptateurs empilés) et
-      `scripts/publish_model.py` (dépôt privé), étape Kaggle `final`, avec l'évaluation unique
-      sur le jeu de test
+      `scripts/publish_model.py` (dépôt privé), étape Kaggle `final` : 99,83 % de jetons
+      identiques ; `lcamara/triage-chsa-qwen3-1.7b@97e8679` (13/11/2026)
+- [x] Évaluation unique sur le jeu de test (`docs/EVALUATION.md`) : système décidé 1/84 cas
+      maximale manqués (1,2 %), exactitude 86,5 %, sur-triage 12 %, les trois seuils atteints ;
+      avec les drapeaux rouges 0/84 (borne haute 4,4 %) et 14,5 % de sur-triage
 - [ ] GRPO : facultatif, à ne traiter que s'il reste du temps
 
 ---

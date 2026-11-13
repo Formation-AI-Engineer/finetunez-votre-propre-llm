@@ -5,7 +5,7 @@ Préalables (une fois) :
   modal secret create triage-chsa-hf HF_TOKEN=<jeton en lecture du dépôt privé>
   modal secret create triage-chsa-api API_KEY=<…> AUDIT_API_KEY=<…> VLLM_API_KEY=<…> \
       VLLM_BASE_URL=https://<espace>--triage-chsa-vllm.modal.run/v1
-Déploiement : MODEL_REVISION=<révision des poids fusionnés> modal deploy deploy/modal_app.py
+Déploiement : modal deploy deploy/modal_app.py (MODEL_REVISION pour une autre révision)
 
 Coûts : le GPU s'éteint après 5 minutes sans requête (scaledown_window) ; aucun conteneur ne
 tourne au repos. Le premier appel après l'arrêt attend le chargement du modèle (environ 1 à
@@ -23,7 +23,8 @@ import subprocess
 import modal
 
 MODEL_ID = os.environ.get("MODEL_ID", "lcamara/triage-chsa-qwen3-1.7b")
-MODEL_REVISION = os.environ.get("MODEL_REVISION", "")
+# Poids fusionnés publiés le 13/11/2026 (étape Kaggle `final`, docs/EVALUATION.md).
+MODEL_REVISION = os.environ.get("MODEL_REVISION", "97e8679033fcfd24cdd28f9b4218127cbf9918f8")
 VLLM_IMAGE = "vllm/vllm-openai:v0.32.0"
 SERVED_NAME = "triage-chsa"
 PORT = 8000

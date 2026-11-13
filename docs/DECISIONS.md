@@ -35,7 +35,9 @@ Il est évalué lui aussi sur le test, pour mesurer l'apport du DPO, pas pour ch
 
 ## 2. Conclure sur le test
 
-Une seule évaluation, sur le système retenu (étape Kaggle `final`). On compare la **valeur
+Une seule évaluation, sur le système retenu (étape Kaggle `final`). **Résultat (13/11)** :
+1/84 cas maximale manqués (1,2 %, IC 95 % [0,2 ; 6,4]), exactitude 86,5 %, sur-triage 12,0 % :
+les trois seuils sont atteints sur la valeur observée (`docs/EVALUATION.md`, « Jeu de test »). On compare la **valeur
 observée** au seuil, et on donne toujours l'intervalle de Wilson à côté. Avec 84 cas maximale,
 0 erreur donne une borne haute de 4,4 % et 1 erreur 6,4 %. Exiger la borne haute sous le seuil
 reviendrait à exiger 0 erreur.

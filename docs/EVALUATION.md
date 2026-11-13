@@ -504,3 +504,52 @@ Les 2 échecs restants du premier jeu : une piqûre de guêpe avec voix rauque e
 avaler (aucun drapeau), et l'enfant qui a avalé des comprimés, à qui le modèle pose une question
 au lieu de donner une priorité. Pour le SFT, on passe de 12 à 4/40, et le sur-triage de
 validation de 0,7 à 2,7 %.
+
+## Jeu de test : évaluation unique (13/11/2026)
+
+Étape Kaggle `final`, commit `d6508f8`. Les adaptateurs SFT `8f0cbc4` et DPO `eb4703b` ont été
+fusionnés dans les poids, publiés en privé : `lcamara/triage-chsa-qwen3-1.7b@97e8679`.
+Contrôles de fusion : 99,83 % de jetons prédits identiques aux adaptateurs empilés, lignes
+`<|im_end|>` et `<|im_start|>` distinctes (cosinus 0,68), table d'embeddings toujours partagée
+avec la sortie. Sur le jeu de sécurité, les poids fusionnés redonnent exactement les chiffres
+des adaptateurs (13, 11 et 9 sur 40). Effet des garde-fous recalculé avec
+`scripts/guard_report.py --split test final sft-r16-lr2e-4`.
+
+| Test (84 cas maximale, 200 vignettes) | Maximale manqués [IC 95 %] | Exactitude | Sur-triage |
+|---|---|---|---|
+| SFT + DPO seul | 3/84 (3,6 % [1,2 ; 10,0]) | 85,5 % | 12,0 % |
+| **SFT + DPO + constantes + cohérence (système décidé)** | **1/84 (1,2 % [0,2 ; 6,4])** | 86,5 % | 12,0 % |
+| SFT + DPO + constantes + cohérence + drapeaux | 0/84 (0,0 % [0,0 ; 4,4]) | 84,5 % | 14,5 % |
+| SFT seul | 8/84 (9,5 %) | 93,5 % | 1,0 % |
+| SFT + constantes + cohérence | 2/84 (2,4 %) | 96,5 % | 1,0 % |
+| SFT + constantes + cohérence + drapeaux | 1/84 (1,2 %) | 94,0 % | 4,0 % |
+
+- **Les trois seuils sont atteints par le système décidé** (`docs/DECISIONS.md`, point 1) :
+  1,2 % de sous-triage maximale (seuil 5 %), 86,5 % d'exactitude (seuil 75 %), 12,0 % de
+  sur-triage (seuil 20 %). La borne haute de l'intervalle (6,4 %) dépasse 5 % : c'est la limite
+  de taille annoncée.
+- **Avec les drapeaux rouges, 0 cas maximale manqué sur 84**, borne haute 4,4 %, sous le seuil
+  de 5 %. Le prix : 5 sur-triages de plus (14,5 %). Il s'agit de 2 grossesses du 1er trimestre
+  avec saignement, d'une douleur testiculaire très forte, d'une douleur thoracique « comme un
+  poids » et d'une intoxication vue tard. Plusieurs sont graves selon FRENCH (métrorragies au
+  1er trimestre : tri 2), alors que le générateur les a classées 3A ou 3B.
+- **Réserve sur les drapeaux** : ils ont été ajoutés après la décision du point 1, mais avant
+  les résultats du test, et ajustés sur l'entraînement seulement. Un affichage de contrôle a
+  toutefois montré les motifs de 13 vignettes de test signalées à tort, avant que les règles ne
+  soient figées. Les règles n'ont pas été modifiées pour ces cas, mais ce chiffre n'est pas aussi
+  propre que celui du système décidé.
+- **Le test confirme la validation** : le DPO réduit le sous-triage (8 → 3 cas maximale
+  manqués, modèle seul) au prix du sur-triage (1,0 → 12,0 %). Avec les garde-fous, le SFT reste
+  proche (2/84 et 1 % de sur-triage). Le compromis du point 1 se confirme.
+- **Trois cas maximale manqués par le modèle seul** : une céphalée de tri 2, rattrapée
+  seulement par les drapeaux ; une intoxication médicamenteuse de tri 1 et une douleur
+  rachidienne de tri 1, rattrapées par les constantes.
+- **QCM** : FrenchMedMCQA 44,0 % (SFT 44,0 %), MediQAl 12,8 % (SFT 13,8 %). MediQAl est bien
+  plus bas qu'en validation (34 %) pour les deux modèles, avec la même répartition des
+  sous-ensembles (moitié réponse unique, moitié réponses multiples). En réponse unique, on passe
+  de 47 % en validation à 18 % en test, proche du hasard (20 % avec 5 choix). Le recouvrement
+  avec l'entraînement est le même dans les deux jeux (environ 10 % des questions partagent plus
+  de la moitié de leurs 8-grammes). Ce n'est donc pas une régression du DPO : le split de test
+  officiel est plus difficile, et les QCM ne mesurent qu'une connaissance générale, hors du cœur
+  de la mission.
+
