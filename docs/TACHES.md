@@ -186,7 +186,9 @@ Plus rien ne bloque l'étape 1.
 - [x] Évaluation automatique : exactitude sur les QCM, niveau de triage sur les vignettes
       (`docs/EVALUATION.md`, « Après le SFT ») : triage 94,7 %, sous-triage des cas maximale 10,6 %
       (seuil 5 % non atteint), QCM 35-48 %
-- [ ] Contrôles de sécurité : hallucinations, recommandations dangereuses
+- [~] Contrôles de sécurité : hallucinations, recommandations dangereuses. Jeu de sécurité de 40
+      cas rédigés à la main (`configs/safety_cases.yaml`, `src/triage/safety.py`, `docs/EVALUATION.md`),
+      à lancer sur Kaggle (étape `safety`) pour base, SFT et SFT + DPO
 - [x] Surveiller le sur-apprentissage et la perte de connaissances générales : perte de
       validation en plateau sans remontée, QCM en hausse
 - [x] Sélectionner l'adaptateur retenu, avec justification chiffrée : `sft-r16-lr2e-4`
