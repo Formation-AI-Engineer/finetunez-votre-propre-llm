@@ -203,3 +203,16 @@ def test_every_turn_is_audited_without_direct_identifiers(client):
 )
 def test_scrub(text, expected):
     assert scrub(text) == expected
+
+
+def test_red_flag_in_the_story_raises_the_level(client):
+    api, _ = client(QUESTION, evaluation("DIFFÉRÉE", "5"))
+    first = api.post(
+        "/api/v1/triage", json={"message": "J'ai une douleur qui serre la poitrine."}
+    ).json()
+    out = api.post(
+        "/api/v1/triage",
+        json={"message": "Depuis une heure, avec des sueurs.", "session_id": first["session_id"]},
+    ).json()
+    assert out["model_priority"] == "differee" and out["priority"] == "maximale"
+    assert [g["name"] for g in out["guards"]] == ["drapeau_rouge"]

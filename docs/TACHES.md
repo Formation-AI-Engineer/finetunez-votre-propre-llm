@@ -266,7 +266,9 @@ Plus rien ne bloque l'étape 1.
       priorité maximale, quel que soit le modèle, puis le niveau du critère FRENCH cité sert de
       plancher (`src/triage/rules.py`, `src/triage/consistency.py`) **(ajout)** : branchées dans
       le service, alerte sur les constantes même pendant une question ou si le modèle est
-      indisponible. Reste : drapeaux rouges sur le texte, mesurés sur des cas neufs
+      indisponible. Drapeaux rouges sur le texte (`src/triage/red_flags.py`, 24 critères FRENCH
+      de tri 1-2) : premier jeu 9 → 2/40 pour le DPO (optimiste) ; second jeu de 29 cas neufs
+      (`configs/safety_cases_v2.yaml`, commité avant les règles) à évaluer (étape `safety_v2`)
 - [x] Réponse structurée : statut (question, évaluation, relais IOA), niveau du modèle et niveau
       final, garde-fous déclenchés et leur raison, alertes, avertissement « aide à la décision »
 - [ ] Page de démonstration minimale pour la soutenance

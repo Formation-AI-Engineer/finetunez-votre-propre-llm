@@ -4,7 +4,8 @@ Le modèle (servi par vLLM, format OpenAI) répond soit par une question, soit p
 « Niveau de priorité : … ». Sur une évaluation, deux garde-fous peuvent relever le niveau, jamais
 le baisser (docs/DECISIONS.md, point 7) :
 1. les règles sur les constantes saisies par l'IOA (src/triage/rules.py) ;
-2. la cohérence du critère FRENCH cité par le modèle (src/triage/consistency.py).
+2. la cohérence du critère FRENCH cité par le modèle (src/triage/consistency.py) ;
+3. les drapeaux rouges sur le récit du patient (src/triage/red_flags.py).
 Les constantes sont aussi contrôlées quand le modèle pose une question, ou s'il est indisponible :
 une constante critique produit une alerte dans tous les cas.
 """
@@ -22,6 +23,7 @@ from triage.consistency import cited_criterion
 from triage.data.schema import FRENCH_TO_PRIORITY, PriorityLevel, Vitals
 from triage.output import parse_assessment
 from triage.prompts import SYSTEM_PROMPT
+from triage.red_flags import red_flag_floor
 from triage.rules import vital_alerts, vital_floor
 
 PRIORITIES: tuple[PriorityLevel, ...] = ("maximale", "moderee", "differee")
@@ -45,7 +47,7 @@ class ChatModel(Protocol):
 
 @dataclass
 class Guard:
-    name: Literal["constantes", "coherence"]
+    name: Literal["constantes", "coherence", "drapeau_rouge"]
     reason: str
     french_level: str
 
@@ -187,6 +189,12 @@ class TriageService:
             priority, level = FRENCH_TO_PRIORITY[cited.level], cited.level
             reason = f"critère cité « {cited.criterion} » ({cited.motif}) : tri {cited.level}"
             result.guards.append(Guard("coherence", reason, cited.level))
+        story = " ".join(m["content"] for m in session.messages if m["role"] == "user")
+        hit = red_flag_floor(story, session.age_years)
+        if hit and _rank(FRENCH_TO_PRIORITY[hit.level]) < _rank(priority):
+            priority, level = FRENCH_TO_PRIORITY[hit.level], hit.level
+            reason = f"{hit.name} (« {hit.excerpt} ») : {hit.motif}, tri {hit.level}"
+            result.guards.append(Guard("drapeau_rouge", reason, hit.level))
         result.priority, result.french_level = priority, level
         return result
 

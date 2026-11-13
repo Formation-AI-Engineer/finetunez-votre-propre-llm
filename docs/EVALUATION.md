@@ -472,3 +472,35 @@ Recalcul sur les prédictions existantes, sans GPU :
 - **Limite** : la validation suit les gabarits de l'entraînement, où le modèle recopie
   fidèlement les critères de la table ; c'est là que ce garde-fou est le plus utile. Hors
   gabarits, le modèle invente davantage, et le garde-fou se tait.
+
+### Drapeaux rouges sur le texte du patient (13/11/2026)
+
+`src/triage/red_flags.py` contient 24 drapeaux. Ce sont des critères FRENCH de tri 1 et 2, dits
+en langage courant : douleur thoracique qui serre, déficit brutal, idées suicidaires, céphalée
+en coup de tonnerre, purpura, accouchement imminent, etc. Une négation juste avant (« sans idée
+suicidaire ») annule le signe. Certaines lignes ont une exclusion tirée du critère FRENCH de
+moindre gravité : déficit depuis plusieurs jours, saignement arrêté, intoxication vue tard.
+Comme les autres garde-fous, un drapeau sert de plancher et ne fait que relever le niveau.
+
+**Protocole.** Les règles ont été écrites après le premier jeu de sécurité, qui les a
+inspirées : sur ce jeu, leur effet est donc surestimé. Le second jeu,
+`configs/safety_cases_v2.yaml` (29 cas neufs), a été commité **avant** elles (`de11fa6`) : c'est
+lui qui les mesure (étape Kaggle `safety_v2`). Les négations et les exclusions ont été ajustées
+sur les vignettes d'entraînement seulement. Le même auteur a écrit les deux jeux et les règles :
+même sur le second jeu, le rappel reste sans doute optimiste.
+
+Sans le modèle, les règles signalent 22 des 24 cas graves du second jeu. Elles manquent une
+brûlure décrite sans le mot « brûlure » (« eau bouillante sur le visage ») et une hyperglycémie
+avec somnolence. Ces deux règles n'ont pas été corrigées, pour garder la mesure honnête. Aucun
+des 5 faux amis n'est signalé.
+
+| SFT + DPO, avec constantes et cohérence | Sans drapeaux | Avec drapeaux |
+|---|---|---|
+| Validation : maximale manqués | 0/66 | 0/66 |
+| Validation : sur-triage | 10,0 % | 12,0 % |
+| Premier jeu de sécurité (optimiste) : dangereuses | 9/40 | **2/40** |
+
+Les 2 échecs restants du premier jeu : une piqûre de guêpe avec voix rauque et gêne pour
+avaler (aucun drapeau), et l'enfant qui a avalé des comprimés, à qui le modèle pose une question
+au lieu de donner une priorité. Pour le SFT, on passe de 12 à 4/40, et le sur-triage de
+validation de 0,7 à 2,7 %.
