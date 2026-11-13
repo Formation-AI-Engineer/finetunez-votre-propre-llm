@@ -259,18 +259,25 @@ Plus rien ne bloque l'étape 1.
 ### Service
 - [ ] Choisir le fournisseur GPU et noter le coût
 - [ ] Conteneur vLLM (`vllm serve`, modèle fusionné) et test de l'API au format OpenAI
-- [ ] FastAPI : `POST /api/v1/triage`, session de questionnaire adaptatif, authentification par clé
-- [ ] Règles de sécurité déterministes : les drapeaux rouges FRENCH (ex. SpO2 < 86 %) forcent la
+- [x] FastAPI : `POST /api/v1/triage`, session de questionnaire adaptatif, authentification par clé
+      (`src/triage/api/main.py`, `src/triage/service.py`, client vLLM `src/triage/llm.py`) ;
+      8 échanges au plus par session, puis relais à l'IOA ; sessions en mémoire (1 h)
+- [~] Règles de sécurité déterministes : les drapeaux rouges FRENCH (ex. SpO2 < 86 %) forcent la
       priorité maximale, quel que soit le modèle, puis le niveau du critère FRENCH cité sert de
-      plancher (`src/triage/rules.py`, `src/triage/consistency.py`) **(ajout)**
-- [ ] Réponse structurée : niveau, explication, questions restantes, avertissement « aide à la décision »
+      plancher (`src/triage/rules.py`, `src/triage/consistency.py`) **(ajout)** : branchées dans
+      le service, alerte sur les constantes même pendant une question ou si le modèle est
+      indisponible. Reste : drapeaux rouges sur le texte, mesurés sur des cas neufs
+- [x] Réponse structurée : statut (question, évaluation, relais IOA), niveau du modèle et niveau
+      final, garde-fous déclenchés et leur raison, alertes, avertissement « aide à la décision »
 - [ ] Page de démonstration minimale pour la soutenance
 - [ ] `Dockerfile`, `docker-compose.yml`, versions épinglées, sondes de santé
 
 ### Traçabilité
-- [ ] Journal d'audit : horodatage, version du modèle, prompt, réponse, niveau, latence, sans
-      donnée directement identifiante
-- [ ] Route de consultation d'audit protégée et test d'audit de bout en bout
+- [x] Journal d'audit : horodatage, version du modèle, prompt, réponse, niveau, latence, sans
+      donnée directement identifiante (`src/triage/audit.py` : masquage par expressions
+      régulières des noms après une formule, téléphones, courriels, NIR, dates ; limite écrite)
+- [~] Route de consultation d'audit protégée et test d'audit de bout en bout : `GET /api/v1/audit`
+      (clé distincte), testée avec un modèle simulé ; reste le test avec vLLM
 
 ### CI/CD
 - [ ] Workflow de test étendu : données de test, API avec vLLM simulé

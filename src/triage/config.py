@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     app_env: str = "dev"
     log_level: str = "info"
     api_key: str = "change-me"
+    audit_api_key: str = "change-me-audit"  # clé distincte pour consulter le journal
 
     base_model_id: str = "Qwen/Qwen3-1.7B-Base"
     served_model_id: str = "triage-chsa"
