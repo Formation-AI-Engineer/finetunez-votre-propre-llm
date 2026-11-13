@@ -88,8 +88,8 @@ pour le POC sous conditions** :
 - les garde-fous déterministes (constantes, cohérence, puis drapeaux rouges à l'étape 4) ne
   peuvent que relever le niveau ;
 - chaque réponse rappelle que l'IOA valide, et l'API renvoie ce rappel dans un champ dédié ;
-- le risque résiduel est affiché : 9/40 cas dangereux avec les garde-fous actuels, sur des
-  formulations libres.
+- le risque résiduel est affiché : avec les drapeaux rouges, 1/29 réponse dangereuse sur le
+  second jeu de sécurité (cas neufs), contre 8/29 pour le modèle seul (`docs/EVALUATION.md`).
 
 Viser 0 par le modèle seul demanderait des données nouvelles et variées, hors de portée du POC.
 

@@ -187,7 +187,7 @@ Plus rien ne bloque l'étape 1.
 - [x] Évaluation automatique : exactitude sur les QCM, niveau de triage sur les vignettes
       (`docs/EVALUATION.md`, « Après le SFT ») : triage 94,7 %, sous-triage des cas maximale 10,6 %
       (seuil 5 % non atteint), QCM 35-48 %
-- [~] Contrôles de sécurité : hallucinations, recommandations dangereuses. Jeu de sécurité de 40
+- [x] Contrôles de sécurité : hallucinations, recommandations dangereuses. Jeu de sécurité de 40
       cas rédigés à la main (`configs/safety_cases.yaml`, `src/triage/safety.py`, `docs/EVALUATION.md`).
       Résultats du 13/11 : 11/40 réponses dangereuses pour SFT + DPO avec les règles (seuil 0),
       toutes des sous-triages de cas maximale formulés hors des gabarits ; aucun conseil de
@@ -273,7 +273,8 @@ Plus rien ne bloque l'étape 1.
       le service, alerte sur les constantes même pendant une question ou si le modèle est
       indisponible. Drapeaux rouges sur le texte (`src/triage/red_flags.py`, 24 critères FRENCH
       de tri 1-2) : premier jeu 9 → 2/40 pour le DPO (optimiste) ; second jeu de 29 cas neufs
-      (`configs/safety_cases_v2.yaml`, commité avant les règles) à évaluer (étape `safety_v2`)
+      (`configs/safety_cases_v2.yaml`, commité avant les règles) : 8 → 1/29 pour le DPO,
+      13 → 1/29 pour le SFT, aucune fausse alerte ; effet de la pression isolé : 1 paire sur 5
 - [x] Réponse structurée : statut (question, évaluation, relais IOA), niveau du modèle et niveau
       final, garde-fous déclenchés et leur raison, alertes, avertissement « aide à la décision »
 - [ ] Page de démonstration minimale pour la soutenance
