@@ -1,4 +1,4 @@
-j"""Alignement par préférences (DPO) du modèle SFT, configuré par configs/dpo.yaml.
+"""Alignement par préférences (DPO) du modèle SFT, configuré par configs/dpo.yaml.
 
 Usage (sur GPU, une seule carte visible) :
   CUDA_VISIBLE_DEVICES=0 uv run --extra train python scripts/train_dpo.py --name dpo
