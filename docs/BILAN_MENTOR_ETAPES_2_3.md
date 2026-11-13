@@ -1,0 +1,151 @@
+# Projet 14 : point mentor, étapes 2 et 3
+
+13 novembre 2026
+
+**En bref.** Le SFT est terminé : 94,7 % d'exactitude de triage, contre 44 % pour le modèle de
+base guidé par 3 exemples. Il reste 10,6 % de sous-triage des cas de priorité maximale, pour un
+seuil de 5 %. Le DPO ramène ce taux à 1,5 %, mais au prix de davantage de sur-triage. Les runs DPO
+définitifs tournent pendant la séance. Je voudrais surtout trancher le compromis entre
+sous-triage et sur-triage, et la manière de conclure sur le jeu de test.
+
+Tous les chiffres portent sur la **validation** (150 vignettes, dont 66 de priorité maximale, et
+200 QCM). Le jeu de test n'a pas encore servi.
+
+## Rappel : seuils proposés (non encore validés)
+
+| Métrique | Seuil | Où on en est |
+|---|---|---|
+| Sous-triage des cas de priorité maximale | ≤ 5 % | SFT 10,6 % ; DPO 1,5 à 6,1 % |
+| Exactitude à 3 niveaux sur les vignettes | ≥ 75 % | SFT 94,7 % ; DPO 90 à 94 % |
+| Recommandation dangereuse sur le jeu de sécurité | 0 | jeu pas encore construit |
+| Latence p95 d'une réponse | ≤ 3 s | étape 4 |
+
+## Étape 2 : fine-tuning supervisé avec LoRA
+
+### Ce qui a été mis en place
+
+- **Mesure de référence d'abord** : le modèle de base a été évalué avant tout entraînement, en
+  zero-shot et en few-shot (3 exemples résolus), avec les mêmes scripts et les mêmes réglages
+  que les modèles entraînés.
+- **Entraînement** : Qwen3-1.7B-Base, LoRA r = 16 sur les 4 projections de l'attention, soit
+  6,4 M de paramètres entraînés (0,37 %). 3 époques, 1 899 pas, 2 h 18 par run sur une T4
+  gratuite de Kaggle, en fp16 (pas de bf16 sur T4).
+- **Perte sur la réponse seulement** : le modèle n'est pas noté sur le texte des questions. Les
+  exemples trop longs sont retirés plutôt que tronqués, pour qu'il apprenne toujours à terminer.
+- **Traçabilité** : la révision du dataset, le commit, la configuration et les courbes sont dans
+  `outputs/sft/<run>/run.json` et dans W&B. Des contrôles automatiques arrêtent l'entraînement si
+  le format appris diffère de celui de l'évaluation. La reprise après interruption est testée.
+- **Smoke test avant chaque run complet** : sur-apprentissage volontaire de 100 exemples (la
+  perte doit tomber vers 0), puis un test de reprise.
+
+### Problèmes rencontrés
+
+| Problème | Cause | Correction |
+|---|---|---|
+| 40/40 réponses jamais terminées | Dans Qwen3-Base, `<|im_end|>`, `<|im_start|>`, `<think>` et `</think>` ont la **même** ligne d'embeddings, jamais entraînée : le modèle ne peut pas distinguer la fin de tour | Entraîner aussi ces 4 lignes (`trainable_token_indices` de PEFT) |
+| Plantage, puis lignes ignorées | Le calcul de perte optimisé de TRL contourne la couche de sortie modifiée par PEFT | Perte calculée par la sortie complète du modèle (lot de 4 avec accumulation de 2) |
+| Score QCM du modèle de base sous-estimé | La lecture des réponses supprimait les lignes identiques à une option, c'est-à-dire la réponse elle-même | Lecture corrigée, ajout d'une lecture « tolérante » pour le modèle de base |
+| Incohérence dans des vignettes | Récit d'un proche (« Mon mari… ») suivi de « J'ai 42 ans » | Générateur corrigé, dataset republié (révision `7dffce7`) |
+
+### Résultats
+
+| Validation | Base (zero-shot) | Base (3 exemples) | **SFT lr 2e-4** | SFT lr 1e-4 |
+|---|---|---|---|---|
+| Sous-triage des cas maximale | 83,3 % | 69,7 % | **10,6 %** (7/66) | 15,2 % |
+| Exactitude triage | 8,7 % | 44,0 % | **94,7 %** | 88,0 % |
+| Sur-triage | 8,0 % | 18,0 % | 0,7 % | 5,3 % |
+| QCM FrenchMedMCQA | 12,0 % | – | **48,0 %** | 44,0 % |
+| QCM MediQAl | 12,7 % | – | 35,3 % | 36,7 % |
+| Réponses lisibles | 17 % | 97 % | 100 % | 100 % |
+
+- **lr 2e-4 est retenu.** Sa perte de validation passe de 0,611 à 0,397 et plafonne sans
+  remonter : pas de sur-apprentissage. À 1e-4, elle baisse encore à la fin : 3 époques ne
+  suffisent pas.
+- **Pas d'oubli** : les QCM progressent nettement.
+- **Les 7 sous-triages restants** classent tous un cas maximale en « modérée », jamais en
+  « différée » :
+  - 2 escalades par les constantes, que le modèle ignore pour suivre le motif (FR 44/min, PA
+    68/37 mmHg). Ce sont les erreurs les plus graves ; ces cas sont rares à l'entraînement
+    (88 sur 1 565) ;
+  - 5 critères de niveau 2 propres au motif (morsure de serpent, allergie avec dyspnée, haute
+    vélocité, fièvre ≥ 40 °C, AES VIH < 48 h).
+
+Non fait à l'étape 2 : la variation de `r` et du nombre d'époques (seul le taux d'apprentissage a
+été comparé), et les contrôles de sécurité.
+
+## Étape 3 : alignement par préférences (DPO)
+
+### Approche
+
+- **Données** : 2 300 paires. 2 000 paires UltraMedical en anglais, et 300 paires de triage en
+  français qui opposent toutes la bonne priorité à un **sous-triage**.
+- **Référence = le modèle SFT.** L'adaptateur SFT est fusionné dans les poids, après un contrôle
+  (99,8 % de jetons prédits identiques avant et après), puis un nouvel adaptateur LoRA est
+  entraîné. Reprendre directement l'adaptateur SFT aurait faussé la référence, à cause des 4
+  lignes de jetons : deux défauts de TRL 1.17 relevés dans son code source.
+- **Suivi séparé** des paires de triage (français) et des paires médicales (anglais), pour voir
+  si l'une progresse au détriment de l'autre.
+- 1 époque, beta 0,1, environ 1 h par run, 5,3 Gio de mémoire.
+
+### Premiers résultats (12/11/2026)
+
+| Validation | SFT | DPO lr 1e-5 | **DPO lr 3e-5** |
+|---|---|---|---|
+| Sous-triage des cas maximale | 10,6 % (7/66) | 6,1 % (4/66) | **1,5 %** (1/66) |
+| Exactitude triage | 94,7 % | 94,0 % | 90,0 % |
+| Sur-triage | 0,7 % | 3,3 % | **9,3 %** (14/150) |
+| QCM (FrenchMedMCQA / MediQAl) | 48,0 / 35,3 % | 48,0 / 34,7 % | 48,0 / 34,7 % |
+
+- **Le DPO corrige le sous-triage**, d'autant plus que le taux d'apprentissage est élevé.
+- **Il fait monter le sur-triage.** Comme toutes les paires françaises opposent la bonne priorité
+  à une priorité plus basse, le modèle apprend aussi « dans le doute, monter d'un niveau ». À
+  3e-5, 9 cas modérés passent en maximale, et 5 cas différés en modérée.
+- **Rien d'autre ne régresse** : QCM, format, paires médicales stables.
+
+**En cours pendant la séance** : DPO à lr 3e-5 (refait : l'adaptateur de la veille a été perdu)
+et à lr 2e-5 (compromis cherché). Résultats à ajouter ici.
+
+## Limites à assumer
+
+- **Données synthétiques** : les vignettes sont générées par règles à partir de FRENCH et n'ont
+  été relues par aucun soignant. Les scores mesurent l'application des règles, pas une
+  performance clinique.
+- **Petits effectifs** : 66 cas maximale en validation, 84 en test. Pour démontrer ≤ 5 % avec un
+  intervalle de confiance à 95 %, il faudrait **0 erreur sur 84** (borne haute 4,4 %) ; une seule
+  erreur donne déjà une borne haute supérieure à 5 %.
+- **Paires DPO de triage trop faciles** : le modèle SFT préfère déjà la bonne réponse dans 100 %
+  des paires de validation. Les sous-triages fabriqués ne ressemblent pas à ses vraies erreurs.
+- **Le jeu de test reste intact** : il ne servira qu'une fois, pour le modèle final.
+
+## Questions pour le mentor
+
+1. **Sous-triage ou sur-triage ?** Le DPO à 3e-5 passe sous 5 % de sous-triage, mais sur-trie
+   9 % des patients. Faut-il ajouter un seuil de sur-triage (par exemple ≤ 10 %), ou privilégier
+   la sécurité ?
+2. **Conclure sur le test** : avec 84 cas maximale, faut-il juger le seuil sur la valeur observée
+   ou sur la borne haute de l'intervalle ? Faut-il plus de vignettes de test ?
+3. **DPO sur les erreurs du modèle lui-même** (paires on-policy : faire générer le modèle SFT,
+   garder ses sous-triages comme réponses rejetées) : est-ce attendu, ou le DPO actuel suffit-il
+   pour passer à l'étape 4 ?
+4. **Hyperparamètres** : la comparaison de taux d'apprentissage (2 au SFT, 3 au DPO) suffit-elle,
+   ou faut-il aussi faire varier `r`, le nombre d'époques et `beta` ?
+5. **Contrôles de sécurité** : qu'attendez-vous pour le « jeu de sécurité » ? Je pense à des
+   vignettes piégées (constante critique dans un motif bénin, demande de diagnostic ou de
+   traitement, patient qui minimise) et à la vérification qu'aucune réponse ne descend sous le
+   plancher des règles de constantes.
+6. **Comparaison par préférence** (taux de victoire, juge LLM avec grille, prévus à l'étape 3) :
+   indispensable, ou facultatif au vu des métriques déjà mesurées ?
+7. **Publication** : les adaptateurs sont dans un dépôt privé du Hub. Les poids finaux fusionnés
+   doivent-ils être publics ?
+
+Points du 4 novembre encore ouverts, s'ils n'ont pas été tranchés : acceptation des vignettes
+synthétiques (et relecture possible par un soignant), correspondance FRENCH vers les 3 niveaux,
+seuils sur les constantes, seuils d'acceptation.
+
+## Prochaines étapes
+
+1. Analyser les runs DPO en cours et retenir un adaptateur : sous-triage, sur-triage et QCM.
+2. Construire le jeu de sécurité et l'évaluer sur base, SFT et SFT + DPO.
+3. Évaluer une seule fois le modèle retenu sur le jeu de test.
+4. Fusionner l'adaptateur et publier les poids finaux.
+5. Étape 4 : API vLLM + FastAPI sur Modal, avec les règles sur les constantes comme garde-fou.
