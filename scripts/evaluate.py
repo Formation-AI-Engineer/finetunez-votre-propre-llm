@@ -9,6 +9,7 @@ Usage (sur GPU) :
       --adapter outputs/dpo/<nom>/best
   options : --split validation|test|safety, --limit 20 (essai rapide), --batch-size 16
   --split safety : jeu de sécurité (configs/safety_cases.yaml, src/triage/safety.py)
+  --model outputs/final/<nom> : poids fusionnés (scripts/merge_final.py) au lieu du modèle de base
 
 Écrit dans outputs/eval/<name>/<split>/ : predictions.jsonl (réponse brute de chaque question),
 summary.json et summary.md (métriques, intervalles de confiance, seuils, conditions du run).
@@ -151,6 +152,7 @@ def main() -> None:
         dest="adapters",
         help="adaptateur LoRA (dossier ou hf://…@révision) ; répétable : SFT puis DPO",
     )
+    parser.add_argument("--model", help="modèle à évaluer (défaut : model_id de la configuration)")
     parser.add_argument("--split", default="validation", choices=("validation", "test", "safety"))
     parser.add_argument("--limit", type=int, help="au plus n questions par tâche (essai)")
     parser.add_argument("--batch-size", type=int, default=16)
@@ -195,7 +197,8 @@ def main() -> None:
     print(f"{len(items)} questions ({data_path.name}) -> {out_dir}")
 
     dtype = pick_dtype(args.dtype, args.device)
-    tokenizer, model = load_model(config["model_id"], args.adapters, dtype, args.device)
+    model_id = args.model or config["model_id"]
+    tokenizer, model = load_model(model_id, args.adapters, dtype, args.device)
     start = time.time()
     answers, stats = generate(
         tokenizer, model, items, args.batch_size, out_dir / "predictions.jsonl"
@@ -205,7 +208,7 @@ def main() -> None:
     summary = safety.summarize(cases, answers) if cases else score(items, answers)
     summary["run"] = {
         "name": args.name,
-        "model_id": config["model_id"],
+        "model_id": model_id,
         "adapters": args.adapters,
         "split": args.split,
         "limit": args.limit,

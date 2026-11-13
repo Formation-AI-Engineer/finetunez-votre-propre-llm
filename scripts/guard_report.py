@@ -1,14 +1,15 @@
 """Effet des garde-fous déterministes sur des prédictions déjà générées (sans GPU).
 
 Pour chaque run de outputs/eval/<nom>/ :
-- validation : sous-triage des cas maximale, exactitude et sur-triage, pour le modèle seul,
-  avec les règles sur les constantes (src/triage/rules.py), avec la cohérence du critère cité
-  (src/triage/consistency.py), et avec les deux ;
+- validation (ou test, avec --split test) : sous-triage des cas maximale, exactitude et
+  sur-triage, pour le modèle seul, avec les règles sur les constantes (src/triage/rules.py),
+  avec la cohérence du critère cité (src/triage/consistency.py), et avec les deux ;
 - sécurité : réécrit safety/summary.json et summary.md avec les trois niveaux de garde-fous
   (les conditions du run d'origine sont conservées).
 
 Usage : uv run python scripts/guard_report.py sft-r16-lr2e-4 dpo-b0.1-lr3e-5
-Écrit outputs/eval/guards.md.
+        uv run python scripts/guard_report.py --split test <runs>   (jeu de test)
+Écrit outputs/eval/guards.md (guards_test.md pour le test).
 """
 
 from __future__ import annotations
@@ -46,10 +47,10 @@ def vital_rules(clinical: dict, assessment: Assessment | None) -> Assessment | N
     return assessment
 
 
-def validation_table(name: str, records: dict[str, dict]) -> list[str]:
-    path = EVAL_DIR / name / "validation" / "predictions.jsonl"
+def triage_table(name: str, split: str, records: dict[str, dict]) -> list[str]:
+    path = EVAL_DIR / name / split / "predictions.jsonl"
     if not path.exists():
-        return [f"Pas de prédictions de validation pour `{name}`.", ""]
+        return [f"Pas de prédictions `{split}` pour `{name}`.", ""]
     preds = [p for p in read_jsonl(path) if p["task"] == "triage"]
     expected = [records[p["id"]]["metadata"]["triage"]["priority"] for p in preds]
     variants = {
@@ -59,7 +60,7 @@ def validation_table(name: str, records: dict[str, dict]) -> list[str]:
         "+ les deux": (True, True),
     }
     lines = [
-        f"### `{name}` : validation ({len(preds)} vignettes)",
+        f"### `{name}` : {split} ({len(preds)} vignettes)",
         "",
         "| Garde-fous | Maximale manqués | Exactitude | Sur-triage |",
         "|---|---|---|---|",
@@ -103,16 +104,20 @@ def safety_table(name: str) -> list[str]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("names", nargs="+", help="runs de outputs/eval/")
+    parser.add_argument("--split", default="validation", choices=("validation", "test"))
     parser.add_argument("--config", default="configs/sft.yaml")
     args = parser.parse_args()
 
     config = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
-    records = {r["id"]: r for r in read_jsonl(dataset_file(config["dataset"], "validation"))}
+    records = {r["id"]: r for r in read_jsonl(dataset_file(config["dataset"], args.split))}
     lines = ["# Effet des garde-fous déterministes", ""]
     for name in args.names:
-        lines += validation_table(name, records) + safety_table(name)
+        lines += triage_table(name, args.split, records)
+        if args.split == "validation":
+            lines += safety_table(name)
     report = "\n".join(lines)
-    (EVAL_DIR / "guards.md").write_text(report, encoding="utf-8")
+    suffix = "" if args.split == "validation" else f"_{args.split}"
+    (EVAL_DIR / f"guards{suffix}.md").write_text(report, encoding="utf-8")
     print(report)
 
 

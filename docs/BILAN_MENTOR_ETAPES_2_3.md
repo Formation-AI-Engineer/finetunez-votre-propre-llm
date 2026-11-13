@@ -179,6 +179,9 @@ relevé à tort.
 
 ## Questions pour le mentor
 
+> **13/11/2026** : il n'y aura plus de point mentor. Ces questions sont tranchées dans
+> `docs/DECISIONS.md`.
+
 1. **Sous-triage ou sur-triage ?** Le DPO à 3e-5 manque 1 cas maximale sur 66 (0 avec les
    règles), mais sur-trie 10 % des patients. Le SFT avec les règles en manque 4, et ne sur-trie
    que 0,7 %. Faut-il ajouter un seuil de sur-triage (par exemple ≤ 10 %), ou privilégier la

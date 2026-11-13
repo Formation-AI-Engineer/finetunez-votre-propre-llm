@@ -176,8 +176,9 @@ Plus rien ne bloque l'étape 1.
       (`lora.trainable_tokens`). Revérifié avec `sft_smoke` : 0/40 réponses coupées
 - [x] Run complet avec suivi W&B : perte train / val, mémoire GPU, durée (étape Kaggle `sft`,
       12/11/2026) : 1 899 pas en 2 h 18, 11,3 Gio
-- [~] Faire varier `r`, le taux d'apprentissage et le nombre d'époques ; garder une trace de chaque essai.
-      Taux d'apprentissage : 2e-4 et 1e-4 comparés (`docs/EVALUATION.md`) ; `r` et époques non variés
+- [x] Faire varier `r`, le taux d'apprentissage et le nombre d'époques ; garder une trace de chaque essai.
+      Taux d'apprentissage : 2e-4 et 1e-4 comparés (`docs/EVALUATION.md`) ; `r` et époques non
+      variés, par choix (plateau de la perte, budget GPU : `docs/DECISIONS.md`, point 4)
 - [x] Checkpoints, reprise testée, graine, hyperparamètres et révision du dataset enregistrés
       (`outputs/sft/<nom>/run.json` ; reprise après interruption : `sft_smoke`, cuda:1, repris du
       pas 20 et fini au pas 40)
@@ -200,12 +201,13 @@ Plus rien ne bloque l'étape 1.
 - [x] Sélectionner l'adaptateur retenu, avec justification chiffrée : `sft-r16-lr2e-4`
       (`configs/dpo.yaml`)
 
-### Seuils proposés (à valider avec le mentor)
+### Seuils retenus (`docs/DECISIONS.md`)
 
 | Métrique | Seuil |
 |---|---|
 | Sous-triage des cas de priorité maximale | ≤ 5 % |
 | Exactitude à 3 niveaux sur les vignettes | ≥ 75 % |
+| Sur-triage (toutes vignettes) | ≤ 20 % |
 | Recommandation dangereuse sur le jeu de sécurité | 0 |
 | Latence p95 d'une réponse | ≤ 3 s |
 
@@ -225,20 +227,27 @@ Plus rien ne bloque l'étape 1.
       `lcamara/triage-chsa-adapters`, révision `8f0cbc4` (12/11/2026, fichiers vérifiés)
 - [x] Petit run : `rewards/accuracies` doit monter et `rewards/margins` s'écarter de 0
       (étape Kaggle `dpo_smoke`, avec test de reprise) : 0,44 → 1,00 et 0,03 → 8,4 ; reprise OK
-- [~] Faire varier `beta` et le taux d'apprentissage ; surveiller `logps/chosen` : lr 1e-5, 2e-5
-      et 3e-5 comparés (`docs/EVALUATION.md`), `logps/chosen` stable ; `beta` non varié
-- [ ] Contrôler le biais de longueur (catégorie `length` d'UltraMedical, `loss_type="sigmoid_norm"`)
+- [x] Faire varier `beta` et le taux d'apprentissage ; surveiller `logps/chosen` : lr 1e-5, 2e-5
+      et 3e-5 comparés (`docs/EVALUATION.md`), `logps/chosen` stable ; `beta` non varié, par
+      choix (`docs/DECISIONS.md`, point 4)
+- [x] Contrôler le biais de longueur (catégorie `length` d'UltraMedical, `loss_type="sigmoid_norm"`) :
+      pas de biais (triage 587 → 581 caractères, QCM 109 → 113), `sigmoid_norm` inutile
 - [~] Comparer base / SFT / SFT + DPO sur les mêmes jeux, sécurité comprise : validation faite,
       avec et sans les règles sur les constantes ; jeu de sécurité et jeu de test à faire.
-      Adaptateur proposé : `dpo-b0.1-lr3e-5` (0/66 cas maximale manqués avec les règles,
-      10 % de sur-triage), à confirmer avec le mentor
+      Adaptateur retenu : `dpo-b0.1-lr3e-5` (0/66 cas maximale manqués avec les règles,
+      10 % de sur-triage ; `docs/DECISIONS.md`). Jeu de test : étape Kaggle `final`
 - [x] Adaptateur DPO proposé publié en privé : `hf://lcamara/triage-chsa-adapters/dpo-b0.1-lr3e-5`,
       révision `eb4703b` (13/11/2026, fichiers vérifiés) ; à empiler après l'adaptateur SFT
       (`evaluate.py --adapter <sft> --adapter <dpo>`)
-- [ ] Comparaison par préférence : net win rate, juge LLM avec grille
+- [x] Comparaison par préférence : taux de victoire déterministe DPO contre SFT en validation,
+      −5,3 % net (6 victoires, 14 défaites) ; pas de juge LLM, par choix (données privées,
+      `docs/DECISIONS.md`, point 6)
 - [x] Vérifier que le français n'a pas régressé (paires DPO majoritairement en anglais) : QCM
       français stables (48,0 % et 34-35 %), format intact
-- [ ] Fusionner l'adaptateur et publier les poids finaux (`merge_and_unload`)
+- [~] Fusionner l'adaptateur et publier les poids finaux (`merge_and_unload`) :
+      `scripts/merge_final.py` (fusion fp32, contrôle contre les adaptateurs empilés) et
+      `scripts/publish_model.py` (dépôt privé), étape Kaggle `final`, avec l'évaluation unique
+      sur le jeu de test
 - [ ] GRPO : facultatif, à ne traiter que s'il reste du temps
 
 ---

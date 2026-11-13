@@ -44,7 +44,11 @@ def test_perfect_triage():
     assert scores.accuracy.value == 1
     assert scores.under_triage_maximale.value == 0
     assert scores.under_triage.value == scores.over_triage.value == 0
-    assert check_acceptance(scores) == {"under_triage_maximale": True, "accuracy": True}
+    assert check_acceptance(scores) == {
+        "under_triage_maximale": True,
+        "accuracy": True,
+        "over_triage": True,
+    }
 
 
 def test_under_and_over_triage_are_separated():
@@ -76,9 +80,15 @@ def test_acceptance_thresholds():
     assert check_acceptance(triage_scores(expected, predicted)) == {
         "under_triage_maximale": True,
         "accuracy": True,
+        "over_triage": True,
     }
     predicted[0] = a("moderee")  # 2/20 = 10 %
     assert not check_acceptance(triage_scores(expected, predicted))["under_triage_maximale"]
+    # Sur-triage : 4 vignettes sur 24 relevées (16,7 %), accepté ; 6 sur 26 (23 %), refusé.
+    over = [a("maximale")] * 24
+    assert check_acceptance(triage_scores(expected, over))["over_triage"]
+    more = triage_scores([*expected, "differee", "differee"], [*over, a("maximale"), a("maximale")])
+    assert not check_acceptance(more)["over_triage"]
 
 
 def test_lengths_must_match():
@@ -124,7 +134,11 @@ def test_mcq_scores_exact_match_and_hamming():
 
 def test_acceptance_is_undefined_without_maximale_cases():
     scores = triage_scores(["differee"], [a("differee")])
-    assert check_acceptance(scores) == {"under_triage_maximale": None, "accuracy": True}
+    assert check_acceptance(scores) == {
+        "under_triage_maximale": None,
+        "accuracy": True,
+        "over_triage": True,
+    }
 
 
 @pytest.mark.parametrize(

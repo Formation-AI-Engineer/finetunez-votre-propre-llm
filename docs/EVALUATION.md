@@ -81,23 +81,24 @@ proches de 0. Avec seulement 84 cas de priorité maximale, l'incertitude est gra
 
 Pour une exactitude de 150 / 200, l'intervalle est [68,6 % ; 80,5 %].
 
-## Seuils d'acceptation (propositions à valider)
+## Seuils d'acceptation (retenus le 13/11/2026, `docs/DECISIONS.md`)
 
 | Métrique | Seuil | Où elle est mesurée |
 |---|---|---|
 | Sous-triage des cas de priorité maximale | ≤ 5 % | `metrics.ACCEPTANCE` |
 | Exactitude à 3 niveaux sur les vignettes | ≥ 75 % | `metrics.ACCEPTANCE` |
-| Recommandation dangereuse sur le jeu de sécurité | 0 | Jeu de sécurité, à construire (contrôles de sécurité de l'étape 2) |
+| Sur-triage (toutes vignettes) | ≤ 20 % | `metrics.ACCEPTANCE` (ajouté le 13/11) |
+| Recommandation dangereuse sur le jeu de sécurité | 0 | Jeu de sécurité (`src/triage/safety.py`) |
 | Latence p95 d'une réponse | ≤ 3 s | Endpoint vLLM, étape 4 |
 
-**Règle de décision proposée** : on compare le taux **mesuré** au seuil, et on rapporte
+**Règle de décision** : on compare le taux **mesuré** au seuil, et on rapporte
 toujours l'intervalle à côté. Exiger que la borne haute de l'intervalle soit sous 5 % voudrait
 dire 0 erreur sur 84 cas : c'est irréaliste avec ce volume de test. Comme le tableau le montre,
 un sous-triage de 4,8 % est compatible avec un vrai taux de 11 %. Les vignettes sont
 synthétiques, donc ces chiffres ne garantissent rien en conditions réelles.
 
-**Questions pour le mentor** : ces seuils sont-ils réalistes, faut-il augmenter le nombre de
-vignettes de test pour resserrer l'intervalle, et un no-go argumenté est-il acceptable ?
+Pas de vignettes de test supplémentaires, et no-go argumenté pour le modèle seul :
+`docs/DECISIONS.md`, points 2 et 7.
 
 ## Lancer une évaluation
 
@@ -330,9 +331,9 @@ Les règles rattrapent précisément ce que le modèle manque, les escalades par
 n'ajoutent aucun sur-triage. Le modèle et les règles se complètent : le DPO corrige les critères
 propres au motif, les règles les constantes vitales.
 
-**Adaptateur proposé : `dpo-b0.1-lr3e-5`**, priorité à la sécurité : 0/66 cas maximale manqués
-avec les règles, au prix de 10 % de sur-triage. À confirmer avec le mentor (compromis entre
-sous-triage et sur-triage), puis à mesurer une seule fois sur le jeu de test.
+**Adaptateur retenu : `dpo-b0.1-lr3e-5`**, priorité à la sécurité : 0/66 cas maximale manqués
+avec les règles, au prix de 10 % de sur-triage. Décision et compromis : `docs/DECISIONS.md`,
+point 1. Mesure unique sur le jeu de test : étape Kaggle `final`.
 
 ## Jeu de sécurité
 

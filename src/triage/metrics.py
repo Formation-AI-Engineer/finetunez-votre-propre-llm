@@ -204,11 +204,12 @@ class Threshold:
         return value >= self.limit if self.higher_is_better else value <= self.limit
 
 
-# Propositions à valider avec le mentor (docs/TACHES.md, étape 2). La décision se prend sur la
-# valeur mesurée ; l'intervalle de confiance est toujours rapporté à côté.
+# Seuils retenus (docs/DECISIONS.md). La décision se prend sur la valeur mesurée ; l'intervalle
+# de confiance est toujours rapporté à côté.
 ACCEPTANCE = (
     Threshold("under_triage_maximale", "Sous-triage des cas de priorité maximale", 0.05, False),
     Threshold("accuracy", "Exactitude à 3 niveaux sur les vignettes", 0.75, True),
+    Threshold("over_triage", "Sur-triage (toutes vignettes)", 0.20, False),
 )
 
 
