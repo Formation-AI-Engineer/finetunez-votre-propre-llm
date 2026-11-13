@@ -224,6 +224,9 @@ Plus rien ne bloque l'étape 1.
       avec et sans les règles sur les constantes ; jeu de sécurité et jeu de test à faire.
       Adaptateur proposé : `dpo-b0.1-lr3e-5` (0/66 cas maximale manqués avec les règles,
       10 % de sur-triage), à confirmer avec le mentor
+- [x] Adaptateur DPO proposé publié en privé : `hf://lcamara/triage-chsa-adapters/dpo-b0.1-lr3e-5`,
+      révision `eb4703b` (13/11/2026, fichiers vérifiés) ; à empiler après l'adaptateur SFT
+      (`evaluate.py --adapter <sft> --adapter <dpo>`)
 - [ ] Comparaison par préférence : net win rate, juge LLM avec grille
 - [x] Vérifier que le français n'a pas régressé (paires DPO majoritairement en anglais) : QCM
       français stables (48,0 % et 34-35 %), format intact
