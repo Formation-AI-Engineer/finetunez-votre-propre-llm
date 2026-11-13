@@ -123,7 +123,13 @@ sortie = W·x + (alpha / r) · B·A·x      W gelée ; A, B entraînées ; B = 0
 ### 4.3 Le bug des jetons jamais entraînés (le point fort à raconter)
 
 ```python
-trainable_token_indices=list(token_ids.values()) or None,   # l. 161
+# l. 156-163
+peft_config = LoraConfig(
+    task_type="CAUSAL_LM",
+    bias="none",
+    trainable_token_indices=list(token_ids.values()) or None,
+    **lora,
+)
 ```
 
 - **Symptôme** : au premier smoke test, les 40 réponses sur 40 étaient sans fin.
