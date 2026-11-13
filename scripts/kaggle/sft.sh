@@ -65,6 +65,11 @@ if run.exists():
     print("pertes de validation :", [round(x, 4) for x in r["eval_losses"]])
 EOF
     summary="outputs/eval/$name/validation/summary.md"
-    [ -f "$summary" ] && sed -n '1,/^## Exemples/p' "$summary" && grep "^Réponses coupées" "$summary"
+    # Jusqu'aux exemples (sans eux), puis la ligne des réponses coupées, qui vient avant ou
+    # après les exemples selon qu'il y a des réponses illisibles : affichée une seule fois.
+    if [ -f "$summary" ]; then
+        sed -n '1,/^## Exemples/p' "$summary" | grep -v -e "^Réponses coupées" -e "^## Exemples"
+        grep "^Réponses coupées" "$summary"
+    fi
 done
 exit "$status"

@@ -242,3 +242,46 @@ Ce qu'on en retient :
 
   C'est la cible du DPO. Avec 66 cas maximale, même 3 erreurs donneraient un intervalle trop large
   pour garantir 5 % : la conclusion finale portera sur le jeu de test.
+
+## Après le DPO (validation, 12/11/2026)
+
+Commit `af616c5`, dataset `7dffce7`, adaptateur SFT `sft-r16-lr2e-4` (Hub, révision `8f0cbc4`)
+fusionné, puis un nouvel adaptateur LoRA r = 16 entraîné par DPO : beta 0,1, 1 époque (288 pas,
+lot effectif de 8 paires), planning cosinus avec 10 % de warmup, 66 min et 5,3 Gio par run.
+Chiffres relevés dans la sortie du notebook : la session n'avait pas été sauvegardée, les
+adaptateurs et les prédictions de ces deux runs sont perdus.
+
+| Triage (150 vignettes) | `sft-r16-lr2e-4` | `dpo-b0.1-lr1e-5` | `dpo-b0.1-lr3e-5` |
+|---|---|---|---|
+| Sous-triage des cas maximale (≤ 5 %) | 10,6 % (7/66) | 6,1 % [2,4 ; 14,6] (4/66) | **1,5 % [0,3 ; 8,1]** (1/66) |
+| Exactitude (≥ 75 %) | 94,7 % | 94,0 % [89,0 ; 96,8] | 90,0 % [84,2 ; 93,8] |
+| Sous-triage | 4,7 % | 2,7 % | 0,7 % |
+| Sur-triage | 0,7 % | 3,3 % | **9,3 %** (14/150) |
+| Réponses lisibles, coupées | 100 %, 0/350 | 100 %, 0/350 | 100 %, 0/350 |
+
+| QCM, lecture stricte | `sft-r16-lr2e-4` | `dpo-b0.1-lr1e-5` | `dpo-b0.1-lr3e-5` |
+|---|---|---|---|
+| FrenchMedMCQA (50) | 48,0 % | 48,0 % | 48,0 % |
+| MediQAl (150) | 35,3 % | 34,7 % | 34,7 % |
+
+| Validation DPO, fin du run | `dpo-b0.1-lr1e-5` | `dpo-b0.1-lr3e-5` |
+|---|---|---|
+| Paires de triage : justesse, marge | 100 %, 3,2 | 100 %, 5,6 |
+| Paires médicales : justesse, marge | 77,7 %, 0,88 | 76,7 %, 1,40 |
+| log-prob. des réponses chosen (triage, médical) | −1,2 → −1,4 ; −355 → −350 | −1,4 → −1,9 ; −350 → −348 |
+
+Ce qu'on en retient :
+
+- **Le DPO corrige le sous-triage**, en proportion du taux d'apprentissage : 7 → 4 → 1 cas
+  maximale sous-triés. À 3e-5, le seuil de 5 % est atteint (borne haute de l'intervalle : 8,1 %).
+- **En contrepartie, le modèle sur-trie** : à 3e-5, 9 cas modérés passent en maximale et 5 cas
+  différés en modérée. Toutes les paires françaises opposent la bonne priorité à une priorité
+  plus basse : le DPO apprend aussi « dans le doute, monter d'un niveau ». Aux urgences, ce sens
+  d'erreur est le moins grave (attente plus courte, pas de retard de soin), mais il encombre les
+  box.
+- **Pas de régression ailleurs** : QCM inchangés, format intact, paires médicales stables, et la
+  probabilité des bonnes réponses ne s'effondre pas (dérive classique du DPO, observée seulement
+  dans le sur-apprentissage volontaire du smoke test).
+- Les paires de triage de validation sont trop faciles pour la mesure : le modèle SFT les réussit
+  déjà toutes (justesse 100 % dès le premier point). Seule l'évaluation par génération
+  (`evaluate.py`) départage les runs.
