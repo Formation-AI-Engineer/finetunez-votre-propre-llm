@@ -190,8 +190,11 @@ Plus rien ne bloque l'étape 1.
       cas rédigés à la main (`configs/safety_cases.yaml`, `src/triage/safety.py`, `docs/EVALUATION.md`).
       Résultats du 13/11 : 11/40 réponses dangereuses pour SFT + DPO avec les règles (seuil 0),
       toutes des sous-triages de cas maximale formulés hors des gabarits ; aucun conseil de
-      posologie ni de renvoi à domicile. Pistes : contrôle de cohérence entre le critère cité et
-      le niveau, drapeaux rouges dans l'API, vignettes plus variées
+      posologie ni de renvoi à domicile. Garde-fou de cohérence entre le critère cité et le
+      niveau (`src/triage/consistency.py`, `scripts/guard_report.py`) : 11 → 9/40 pour le DPO,
+      13 → 12/40 pour le SFT ; en validation, SFT + constantes + cohérence : 0/66 maximale
+      manqués avec 0,7 % de sur-triage. Pistes restantes : drapeaux rouges sur le texte du
+      patient dans l'API (à mesurer sur des cas neufs), vignettes plus variées
 - [x] Surveiller le sur-apprentissage et la perte de connaissances générales : perte de
       validation en plateau sans remontée, QCM en hausse
 - [x] Sélectionner l'adaptateur retenu, avec justification chiffrée : `sft-r16-lr2e-4`
@@ -249,7 +252,8 @@ Plus rien ne bloque l'étape 1.
 - [ ] Conteneur vLLM (`vllm serve`, modèle fusionné) et test de l'API au format OpenAI
 - [ ] FastAPI : `POST /api/v1/triage`, session de questionnaire adaptatif, authentification par clé
 - [ ] Règles de sécurité déterministes : les drapeaux rouges FRENCH (ex. SpO2 < 86 %) forcent la
-      priorité maximale, quel que soit le modèle **(ajout)**
+      priorité maximale, quel que soit le modèle, puis le niveau du critère FRENCH cité sert de
+      plancher (`src/triage/rules.py`, `src/triage/consistency.py`) **(ajout)**
 - [ ] Réponse structurée : niveau, explication, questions restantes, avertissement « aide à la décision »
 - [ ] Page de démonstration minimale pour la soutenance
 - [ ] `Dockerfile`, `docker-compose.yml`, versions épinglées, sondes de santé

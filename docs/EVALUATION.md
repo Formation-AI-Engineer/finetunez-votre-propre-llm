@@ -405,8 +405,10 @@ ce que la validation ne montrait pas :
   mesurent surtout la maîtrise de ces gabarits.
 - **Toutes les erreurs sont des sous-triages** d'un cas maximale vers modérée ou différée. Le
   modèle ne conseille jamais de rentrer chez soi ni de posologie (0 sur 8 questions hors
-  périmètre, à confirmer en relisant les réponses). La seule erreur hors périmètre est un enfant
-  qui a avalé des comprimés : le modèle pose une question au lieu de donner une priorité.
+  périmètre, confirmé en relisant les réponses : le SFT et le DPO répondent à chaque question
+  hors périmètre par une question de recueil, sans dose ni autorisation de partir). La seule
+  erreur hors périmètre est un enfant qui a avalé des comprimés : le modèle pose une question au
+  lieu de donner une priorité. Les deux cas en anglais reçoivent une réponse en français.
 - **Le critère cité contredit souvent le niveau.** Par exemple, le modèle cite « confusion /
   céphalée » (critère de tri 2 de la fièvre), mais annonce MODÉRÉE (tri 3B). Ou il cite
   « dyspnée à la parole » et annonce DIFFÉRÉE.
@@ -420,3 +422,52 @@ ce que la validation ne montrait pas :
 - **Les règles sur les constantes font leur travail** : 0 erreur sur les 8 constantes
   critiques, contre 2 pour le modèle seul.
 - **Le modèle de base est inutilisable** : 26 réponses illisibles ou dégénérées sur 40.
+
+### Garde-fou de cohérence du critère cité (13/11/2026)
+
+`src/triage/consistency.py` relit le motif et le critère FRENCH que la réponse cite. Quand ils
+correspondent à une ligne de `configs/french_table.json`, le niveau de cette ligne sert de
+plancher, comme les règles sur les constantes. La correspondance est approximative (indice de
+Jaccard sur les mots, seuil 0,5), mais elle tient compte des négations (« sans mauvaise
+tolérance ») et des signes de comparaison (« FC ≤ 100/min » contre « FC > 100/min »). Un motif ou
+un critère inventé ne déclenche rien.
+
+Le seuil a été fixé avant la mesure, et le garde-fou n'a été vérifié que sur les réponses de
+référence : sur les 1 850 réponses de triage du dataset (entraînement, validation, test), les
+1 315 critères reconnus redonnent tous le niveau de la vignette, et aucune réponse n'est relevée.
+Les deux corrections (négations, signes) viennent de ce contrôle, pas des prédictions.
+
+Recalcul sur les prédictions existantes, sans GPU :
+`uv run python scripts/guard_report.py sft-r16-lr2e-4 dpo-b0.1-lr3e-5 base`.
+
+| Validation (66 cas maximale, 150 vignettes) | Maximale manqués | Exactitude | Sur-triage |
+|---|---|---|---|
+| SFT seul | 7/66 (10,6 %) | 94,7 % | 0,7 % |
+| SFT + constantes | 4/66 | 96,7 % | 0,7 % |
+| SFT + cohérence | 3/66 | 97,3 % | 0,7 % |
+| **SFT + constantes + cohérence** | **0/66** (IC 95 % [0 ; 5,5 %]) | **99,3 %** | **0,7 %** |
+| SFT + DPO + constantes + cohérence | 0/66 | 90,0 % | 10,0 % |
+
+| Sécurité (réponses dangereuses sur 40) | `base` | `sft` | `dpo` |
+|---|---|---|---|
+| Modèle seul | 26 | 15 | 13 |
+| + règles sur les constantes | 26 | 13 | 11 |
+| + cohérence du critère cité | 26 | **12** | **9** |
+
+- **Sur la validation, le SFT avec les deux garde-fous fait aussi bien que le DPO** sur les cas
+  maximale (0/66), sans son sur-triage (0,7 % contre 10 %). Sur le SFT, le garde-fou corrige 4
+  sous-triages où le modèle citait le bon critère de tri 2 (morsure de serpent, allergie avec
+  dyspnée, traumatisme à haute vélocité, exposition au VIH) mais annonçait MODÉRÉE. Il n'ajoute
+  aucun sur-triage. Il ne change rien au DPO, dont les sous-triages ne viennent pas d'une
+  contradiction.
+- **Sur le jeu de sécurité, le gain est faible** : 1 cas pour le SFT (pression-05), 2 pour le DPO
+  (pression-02, pression-06). Les 9 échecs restants du DPO ne sont pas des contradictions : le
+  modèle reconnaît le bon motif (douleur thoracique, AVC) mais choisit « avis référent » (tri
+  3B), ou il invente le motif (« Exposition à la douleur et à la sophrologie » pour une
+  intoxication volontaire, « Refus de soins » pour des idées suicidaires). Ces cas demanderaient
+  des drapeaux rouges sur le texte du patient (douleur thoracique avec sueurs, déficit brutal,
+  idées suicidaires, ingestion de médicaments chez l'enfant, crises répétées), mais de telles
+  règles, écrites en relisant ces 9 cas, ne pourraient pas être mesurées sur ce même jeu.
+- **Limite** : la validation suit les gabarits de l'entraînement, où le modèle recopie
+  fidèlement les critères de la table ; c'est là que ce garde-fou est le plus utile. Hors
+  gabarits, le modèle invente davantage, et le garde-fou se tait.

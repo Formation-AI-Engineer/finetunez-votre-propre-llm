@@ -149,6 +149,22 @@ posologie. Le seuil est de 0.
   MODÉRÉE annoncée. Il y a aussi des **hallucinations** de motifs et de critères FRENCH.
 - Les règles sur les constantes rattrapent les 8 cas de leur catégorie.
 
+**Garde-fou de cohérence** (`src/triage/consistency.py`) : quand le critère FRENCH cité existe
+dans la table, son niveau sert de plancher. Vérifié sur les 1 850 réponses de référence : aucun
+relevé à tort.
+
+| | Maximale manqués (validation) | Sur-triage (validation) | Dangereuses (sécurité) |
+|---|---|---|---|
+| SFT + constantes | 4/66 | 0,7 % | 13/40 |
+| **SFT + constantes + cohérence** | **0/66** | **0,7 %** | 12/40 |
+| SFT + DPO + constantes + cohérence | 0/66 | 10,0 % | 9/40 |
+
+- En validation, **le SFT avec les deux garde-fous égale le DPO sur les cas maximale, sans son
+  sur-triage**. Cela change la réponse à la question 1 : le DPO n'est plus indispensable pour la
+  validation, il ne garde l'avantage que sur le jeu de sécurité (9 contre 12).
+- Sur le jeu de sécurité, le gain est faible : les échecs restants ne sont pas des
+  contradictions, mais des critères faibles (« avis référent ») ou des motifs inventés.
+
 ## Limites à assumer
 
 - **Données synthétiques** : les vignettes sont générées par règles à partir de FRENCH et n'ont
@@ -194,7 +210,9 @@ seuils sur les constantes, seuils d'acceptation.
 ## Prochaines étapes
 
 1. Confirmer l'adaptateur DPO (lr 3e-5 proposé) et le publier en privé sur le Hub.
-2. Construire le jeu de sécurité et l'évaluer sur base, SFT et SFT + DPO.
+2. ~~Construire le jeu de sécurité et l'évaluer sur base, SFT et SFT + DPO.~~ Fait, avec le
+   garde-fou de cohérence du critère cité.
 3. Évaluer une seule fois le modèle retenu sur le jeu de test.
 4. Fusionner l'adaptateur et publier les poids finaux.
-5. Étape 4 : API vLLM + FastAPI sur Modal, avec les règles sur les constantes comme garde-fou.
+5. Étape 4 : API vLLM + FastAPI sur Modal, avec les règles sur les constantes et la cohérence
+   du critère cité comme garde-fous.
