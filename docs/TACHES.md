@@ -258,7 +258,9 @@ Plus rien ne bloque l'étape 1.
 
 ### Service
 - [ ] Choisir le fournisseur GPU et noter le coût
-- [ ] Conteneur vLLM (`vllm serve`, modèle fusionné) et test de l'API au format OpenAI
+- [~] Conteneur vLLM (`vllm serve`, modèle fusionné) et test de l'API au format OpenAI :
+      `deploy/modal_app.py` (vLLM 0.32.0 sur L4, révision du modèle fixée, arrêt après 5 min
+      d'inactivité) et `docker-compose.yml` ; à déployer après la publication des poids
 - [x] FastAPI : `POST /api/v1/triage`, session de questionnaire adaptatif, authentification par clé
       (`src/triage/api/main.py`, `src/triage/service.py`, client vLLM `src/triage/llm.py`) ;
       8 échanges au plus par session, puis relais à l'IOA ; sessions en mémoire (1 h)
@@ -272,7 +274,9 @@ Plus rien ne bloque l'étape 1.
 - [x] Réponse structurée : statut (question, évaluation, relais IOA), niveau du modèle et niveau
       final, garde-fous déclenchés et leur raison, alertes, avertissement « aide à la décision »
 - [ ] Page de démonstration minimale pour la soutenance
-- [ ] `Dockerfile`, `docker-compose.yml`, versions épinglées, sondes de santé
+- [x] `Dockerfile`, `docker-compose.yml`, versions épinglées, sondes de santé : image de l'API
+      construite et testée localement (healthcheck, relais IOA sans vLLM, journal d'audit) ;
+      `GET /api/v1/readiness` vérifie vLLM
 
 ### Traçabilité
 - [x] Journal d'audit : horodatage, version du modèle, prompt, réponse, niveau, latence, sans

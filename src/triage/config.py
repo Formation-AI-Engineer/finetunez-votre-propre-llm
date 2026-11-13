@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     base_model_id: str = "Qwen/Qwen3-1.7B-Base"
     served_model_id: str = "triage-chsa"
     vllm_base_url: str = "http://localhost:8001/v1"
+    vllm_api_key: str | None = None  # clé du serveur vLLM (`vllm serve --api-key`)
 
     audit_log_path: str = "outputs/audit/interactions.jsonl"
 

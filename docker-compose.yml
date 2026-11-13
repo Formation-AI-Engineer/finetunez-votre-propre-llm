@@ -1,0 +1,36 @@
+# Démonstration locale sur une machine avec GPU NVIDIA : vLLM + API.
+# Prérequis : .env (copie de .env.example) avec HF_TOKEN, API_KEY, AUDIT_API_KEY, VLLM_API_KEY,
+# MODEL_REVISION (révision fixée des poids fusionnés, docs/TACHES.md).
+services:
+  vllm:
+    image: vllm/vllm-openai:v0.32.0
+    command: >
+      ${MODEL_ID:-lcamara/triage-chsa-qwen3-1.7b} --revision ${MODEL_REVISION:?révision du modèle}
+      --served-model-name triage-chsa --api-key ${VLLM_API_KEY:?clé vLLM}
+      --max-model-len 4096 --generation-config vllm
+    environment:
+      HF_TOKEN: ${HF_TOKEN:?jeton Hugging Face}
+    volumes:
+      - hf-cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices: [{driver: nvidia, count: 1, capabilities: [gpu]}]
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8000/health"]
+      interval: 15s
+      start_period: 300s
+  api:
+    build: .
+    ports: ["8000:8000"]
+    env_file: .env
+    environment:
+      VLLM_BASE_URL: http://vllm:8000/v1
+      AUDIT_LOG_PATH: /app/outputs/audit/interactions.jsonl
+    volumes:
+      - audit:/app/outputs/audit
+    depends_on:
+      vllm: {condition: service_healthy}
+volumes:
+  hf-cache:
+  audit:

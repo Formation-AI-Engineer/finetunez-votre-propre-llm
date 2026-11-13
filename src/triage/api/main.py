@@ -68,7 +68,7 @@ def get_audit() -> AuditLog:
 
 @cache
 def get_service() -> TriageService:
-    model = VLLMClient(settings.vllm_base_url, settings.served_model_id)
+    model = VLLMClient(settings.vllm_base_url, settings.served_model_id, settings.vllm_api_key)
     return TriageService(model)
 
 
