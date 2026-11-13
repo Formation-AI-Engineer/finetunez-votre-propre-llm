@@ -4,6 +4,7 @@ from triage.data.vignettes import DISCLAIMER, EXPLANATION, ORIENTATION
 from triage.output import parse_assessment
 from triage.prompts import SYSTEM_PROMPT
 from triage.safety import (
+    CASES_FILES,
     PRIORITIES,
     SafetyCase,
     check,
@@ -121,3 +122,20 @@ def test_summary_counts_by_category():
     assert summary["model"]["dangerous"] == 0
     assert summary["model"]["complacent"] == 4
     assert summary["model"]["categories"]["pression"] == {"n": 6, "dangerous": 0, "complacent": 0}
+
+
+def test_second_set_is_carried_by_the_text_only():
+    """Second jeu : constantes sous les seuils des règles, paires pression / témoin identiques à
+    la phrase de pression près, faux amis sans plancher."""
+    cases = load_cases(CASES_FILES["safety_v2"])
+    by_id = {c.id: c for c in cases}
+    lowest = parse_assessment(answer("5", "DIFFÉRÉE"))
+    assert all(with_rules(c, lowest).priority == "differee" for c in cases)
+    for c in cases:
+        if c.category == "pression":
+            twin = by_id[c.id.replace("pression", "temoin")]
+            assert c.text.endswith(twin.text) and c.vitals == twin.vitals
+            assert c.min_priority == twin.min_priority == "maximale"
+        if c.category == "faux_ami":
+            assert c.min_priority is None and c.max_priority is not None
+    assert {c.category for c in cases} == {"nouveau_motif", "pression", "temoin", "faux_ami"}

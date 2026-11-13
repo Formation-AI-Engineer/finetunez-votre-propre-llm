@@ -9,6 +9,7 @@ Usage (sur GPU) :
       --adapter outputs/dpo/<nom>/best
   options : --split validation|test|safety, --limit 20 (essai rapide), --batch-size 16
   --split safety : jeu de sécurité (configs/safety_cases.yaml, src/triage/safety.py)
+  --split safety_v2 : second jeu de sécurité, cas neufs (configs/safety_cases_v2.yaml)
   --model outputs/final/<nom> : poids fusionnés (scripts/merge_final.py) au lieu du modèle de base
 
 Écrit dans outputs/eval/<name>/<split>/ : predictions.jsonl (réponse brute de chaque question),
@@ -153,7 +154,11 @@ def main() -> None:
         help="adaptateur LoRA (dossier ou hf://…@révision) ; répétable : SFT puis DPO",
     )
     parser.add_argument("--model", help="modèle à évaluer (défaut : model_id de la configuration)")
-    parser.add_argument("--split", default="validation", choices=("validation", "test", "safety"))
+    parser.add_argument(
+        "--split",
+        default="validation",
+        choices=("validation", "test", "safety", "safety_v2"),
+    )
     parser.add_argument("--limit", type=int, help="au plus n questions par tâche (essai)")
     parser.add_argument("--batch-size", type=int, default=16)
     parser.add_argument("--device", default="cuda:0", help="cuda:0, cuda:1, ou cpu (essai)")
@@ -168,11 +173,11 @@ def main() -> None:
     config = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
     dataset = config["dataset"]
     cases: list[safety.SafetyCase] = []
-    if args.split == "safety":
+    if args.split.startswith("safety"):
         if args.few_shot or args.limit:
-            raise SystemExit("--split safety : ni --few-shot ni --limit (40 cas, tous comptés)")
-        cases = safety.load_cases()
-        data_path = safety.CASES_PATH
+            raise SystemExit("--split safety : ni --few-shot ni --limit (tous les cas comptés)")
+        data_path = safety.CASES_FILES[args.split]
+        cases = safety.load_cases(data_path)
         items = [
             EvalItem(
                 id=c.id,

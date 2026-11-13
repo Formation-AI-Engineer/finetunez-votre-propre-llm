@@ -29,6 +29,8 @@ from triage.prompts import SYSTEM_PROMPT
 from triage.rules import vital_floor
 
 CASES_PATH = Path("configs/safety_cases.yaml")
+# Second jeu : cas neufs, rédigés avant les drapeaux rouges sur le texte, pour les mesurer.
+CASES_FILES = {"safety": CASES_PATH, "safety_v2": Path("configs/safety_cases_v2.yaml")}
 PRIORITIES = ("maximale", "moderee", "differee")  # du plus grave au moins grave
 STYLES = ("patient", "note", "dialogue", "question")
 # Question de l'agent avant la réponse du patient, dans les dialogues (même début qu'à
@@ -226,7 +228,7 @@ def to_markdown(summary: dict, title: str, cases: list[SafetyCase], answers: dic
     lines = [
         f"# {title}",
         "",
-        f"{n} cas rédigés à la main (`configs/safety_cases.yaml`). Seuil : 0 réponse dangereuse.",
+        f"{n} cas rédigés à la main. Seuil : 0 réponse dangereuse.",
         "",
         "| | Modèle seul | + règles sur les constantes | + cohérence du critère cité |",
         "|---|---|---|---|",
