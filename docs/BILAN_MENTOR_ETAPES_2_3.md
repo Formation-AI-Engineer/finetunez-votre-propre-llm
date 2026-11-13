@@ -4,9 +4,9 @@
 
 **En bref.** Le SFT est terminé : 94,7 % d'exactitude de triage, contre 44 % pour le modèle de
 base guidé par 3 exemples. Il reste 10,6 % de sous-triage des cas de priorité maximale, pour un
-seuil de 5 %. Le DPO ramène ce taux à 1,5 %, mais au prix de davantage de sur-triage. Les runs DPO
-définitifs tournent pendant la séance. Je voudrais surtout trancher le compromis entre
-sous-triage et sur-triage, et la manière de conclure sur le jeu de test.
+seuil de 5 %. Le DPO ramène ce taux à 1,5 % (1/66), et à 0/66 avec les règles de sécurité sur
+les constantes, mais il sur-trie 10 % des patients. Je voudrais surtout trancher le compromis
+entre sous-triage et sur-triage, et la manière de conclure sur le jeu de test.
 
 Tous les chiffres portent sur la **validation** (150 vignettes, dont 66 de priorité maximale, et
 200 QCM). Le jeu de test n'a pas encore servi.
@@ -102,8 +102,31 @@ Non fait à l'étape 2 : la variation de `r` et du nombre d'époques (seul le ta
   3e-5, 9 cas modérés passent en maximale, et 5 cas différés en modérée.
 - **Rien d'autre ne régresse** : QCM, format, paires médicales stables.
 
-**En cours pendant la séance** : DPO à lr 3e-5 (refait : l'adaptateur de la veille a été perdu)
-et à lr 2e-5 (compromis cherché). Résultats à ajouter ici.
+### Runs définitifs (13/11/2026)
+
+Le run à 3e-5 a été refait, car l'adaptateur de la veille avait été perdu. Il retrouve les mêmes
+chiffres à un cas près : **les résultats sont reproductibles**.
+
+| Validation | SFT | DPO lr 2e-5 | **DPO lr 3e-5** |
+|---|---|---|---|
+| Sous-triage des cas maximale | 10,6 % (7/66) | 3,0 % (2/66) | **1,5 %** (1/66) |
+| … avec les règles sur les constantes | 6,1 % (4/66) | 1,5 % (1/66) | **0,0 %** (0/66) |
+| Exactitude triage | 94,7 % | 90,0 % | 89,3 % |
+| Sur-triage | 0,7 % | 8,7 % | 10,0 % |
+| QCM (FrenchMedMCQA / MediQAl) | 48,0 / 35,3 % | 48,0 / 34,7 % | 48,0 / 34,0 % |
+
+- **Ce que le DPO corrige** : 6 des 7 sous-triages du SFT à 3e-5. Ce sont les critères propres
+  au motif (serpent, allergie avec dyspnée, haute vélocité, fièvre ≥ 40 °C, AES VIH) et une
+  hypotension.
+- **Ce qui résiste** : une crise d'angoisse avec FR 44/min, classée modérée. C'est exactement ce
+  que rattrapent les **règles sur les constantes** (`src/triage/rules.py`), prévues comme
+  plancher dans l'API. Le modèle et les règles se complètent, et les règles n'ajoutent aucun
+  sur-triage.
+- **D'où vient le sur-triage** : surtout des cas 3B dont le critère sonne grave (FC > 110/min,
+  impotence totale, perte de connaissance). Le modèle cite **le bon critère FRENCH**, mais
+  l'associe au tri 2 au lieu du 3B.
+- **Adaptateur proposé : DPO lr 3e-5**, pour donner la priorité à la sécurité. À confirmer avec
+  vous (question 1).
 
 ## Limites à assumer
 
@@ -119,9 +142,10 @@ et à lr 2e-5 (compromis cherché). Résultats à ajouter ici.
 
 ## Questions pour le mentor
 
-1. **Sous-triage ou sur-triage ?** Le DPO à 3e-5 passe sous 5 % de sous-triage, mais sur-trie
-   9 % des patients. Faut-il ajouter un seuil de sur-triage (par exemple ≤ 10 %), ou privilégier
-   la sécurité ?
+1. **Sous-triage ou sur-triage ?** Le DPO à 3e-5 manque 1 cas maximale sur 66 (0 avec les
+   règles), mais sur-trie 10 % des patients. Le SFT avec les règles en manque 4, et ne sur-trie
+   que 0,7 %. Faut-il ajouter un seuil de sur-triage (par exemple ≤ 10 %), ou privilégier la
+   sécurité ? Les règles font-elles partie du système évalué ?
 2. **Conclure sur le test** : avec 84 cas maximale, faut-il juger le seuil sur la valeur observée
    ou sur la borne haute de l'intervalle ? Faut-il plus de vignettes de test ?
 3. **DPO sur les erreurs du modèle lui-même** (paires on-policy : faire générer le modèle SFT,
@@ -144,7 +168,7 @@ seuils sur les constantes, seuils d'acceptation.
 
 ## Prochaines étapes
 
-1. Analyser les runs DPO en cours et retenir un adaptateur : sous-triage, sur-triage et QCM.
+1. Confirmer l'adaptateur DPO (lr 3e-5 proposé) et le publier en privé sur le Hub.
 2. Construire le jeu de sécurité et l'évaluer sur base, SFT et SFT + DPO.
 3. Évaluer une seule fois le modèle retenu sur le jeu de test.
 4. Fusionner l'adaptateur et publier les poids finaux.

@@ -207,21 +207,26 @@ Plus rien ne bloque l'étape 1.
 
 **À la fin :** modèle aligné, gain mesuré par rapport au SFT seul, poids finaux disponibles.
 
-- [~] Script DPO : `scripts/train_dpo.py`, configuré par `configs/dpo.yaml`, à valider sur Kaggle
-      (étape `dpo_smoke`). L'adaptateur SFT n'est pas repris avec `is_trainable=True` : il est
+- [x] Script DPO : `scripts/train_dpo.py`, configuré par `configs/dpo.yaml`, validé sur Kaggle
+      (étape `dpo_smoke`, puis étape `dpo`). L'adaptateur SFT n'est pas repris avec `is_trainable=True` : il est
       **fusionné** dans le modèle (contrôle : mêmes prédictions avant et après), puis un nouvel
       adaptateur LoRA est entraîné. La référence du DPO est ainsi le modèle SFT, avec ses lignes
       de jetons : TRL les aurait perdues dans sa copie de référence et dans sa perte fusionnée
 - [x] Publier l'adaptateur SFT retenu en privé sur le Hub (`scripts/publish_adapter.py`) : Kaggle
       le télécharge à une révision fixe (`sft_adapter` dans `configs/dpo.yaml`) ;
       `lcamara/triage-chsa-adapters`, révision `8f0cbc4` (12/11/2026, fichiers vérifiés)
-- [ ] Petit run : `rewards/accuracies` doit monter et `rewards/margins` s'écarter de 0
-      (étape Kaggle `dpo_smoke`, avec test de reprise)
-- [ ] Faire varier `beta` et le taux d'apprentissage ; surveiller `logps/chosen`
+- [x] Petit run : `rewards/accuracies` doit monter et `rewards/margins` s'écarter de 0
+      (étape Kaggle `dpo_smoke`, avec test de reprise) : 0,44 → 1,00 et 0,03 → 8,4 ; reprise OK
+- [~] Faire varier `beta` et le taux d'apprentissage ; surveiller `logps/chosen` : lr 1e-5, 2e-5
+      et 3e-5 comparés (`docs/EVALUATION.md`), `logps/chosen` stable ; `beta` non varié
 - [ ] Contrôler le biais de longueur (catégorie `length` d'UltraMedical, `loss_type="sigmoid_norm"`)
-- [ ] Comparer base / SFT / SFT + DPO sur les mêmes jeux, sécurité comprise
+- [~] Comparer base / SFT / SFT + DPO sur les mêmes jeux, sécurité comprise : validation faite,
+      avec et sans les règles sur les constantes ; jeu de sécurité et jeu de test à faire.
+      Adaptateur proposé : `dpo-b0.1-lr3e-5` (0/66 cas maximale manqués avec les règles,
+      10 % de sur-triage), à confirmer avec le mentor
 - [ ] Comparaison par préférence : net win rate, juge LLM avec grille
-- [ ] Vérifier que le français n'a pas régressé (paires DPO majoritairement en anglais)
+- [x] Vérifier que le français n'a pas régressé (paires DPO majoritairement en anglais) : QCM
+      français stables (48,0 % et 34-35 %), format intact
 - [ ] Fusionner l'adaptateur et publier les poids finaux (`merge_and_unload`)
 - [ ] GRPO : facultatif, à ne traiter que s'il reste du temps
 

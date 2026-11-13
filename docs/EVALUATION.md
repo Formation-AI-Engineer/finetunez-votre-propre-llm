@@ -81,7 +81,7 @@ proches de 0. Avec seulement 84 cas de priorité maximale, l'incertitude est gra
 
 Pour une exactitude de 150 / 200, l'intervalle est [68,6 % ; 80,5 %].
 
-## Seuils d'acceptation (propositions à valider avec le mentor)
+## Seuils d'acceptation (propositions à valider)
 
 | Métrique | Seuil | Où elle est mesurée |
 |---|---|---|
@@ -249,7 +249,7 @@ Commit `af616c5`, dataset `7dffce7`, adaptateur SFT `sft-r16-lr2e-4` (Hub, révi
 fusionné, puis un nouvel adaptateur LoRA r = 16 entraîné par DPO : beta 0,1, 1 époque (288 pas,
 lot effectif de 8 paires), planning cosinus avec 10 % de warmup, 66 min et 5,3 Gio par run.
 Chiffres relevés dans la sortie du notebook : la session n'avait pas été sauvegardée, les
-adaptateurs et les prédictions de ces deux runs sont perdus.
+adaptateurs et les prédictions de ces deux runs sont perdus (3e-5 refait le 13/11, ci-dessous).
 
 | Triage (150 vignettes) | `sft-r16-lr2e-4` | `dpo-b0.1-lr1e-5` | `dpo-b0.1-lr3e-5` |
 |---|---|---|---|
@@ -285,3 +285,51 @@ Ce qu'on en retient :
 - Les paires de triage de validation sont trop faciles pour la mesure : le modèle SFT les réussit
   déjà toutes (justesse 100 % dès le premier point). Seule l'évaluation par génération
   (`evaluate.py`) départage les runs.
+
+### Runs définitifs (13/11/2026)
+
+Commit `b8ff817`, mêmes réglages. `dpo-b0.1-lr3e-5` a été refait pour retrouver son adaptateur ;
+`dpo-b0.1-lr2e-5` cherche un compromis. Adaptateurs dans `outputs/dpo/*/best`, prédictions dans
+`outputs/eval/dpo-*/validation/`.
+
+| Triage (150 vignettes) | `sft-r16-lr2e-4` | `dpo-b0.1-lr2e-5` | `dpo-b0.1-lr3e-5` |
+|---|---|---|---|
+| Sous-triage des cas maximale (≤ 5 %) | 10,6 % (7/66) | 3,0 % [0,8 ; 10,4] (2/66) | **1,5 % [0,3 ; 8,1]** (1/66) |
+| Exactitude (≥ 75 %) | 94,7 % | 90,0 % [84,2 ; 93,8] | 89,3 % [83,4 ; 93,3] |
+| Sur-triage | 0,7 % | 8,7 % (13/150) | 10,0 % (15/150) |
+| QCM FrenchMedMCQA, MediQAl | 48,0 %, 35,3 % | 48,0 %, 34,7 % | 48,0 %, 34,0 % |
+| Réponses lisibles, coupées | 100 %, 0/350 | 100 %, 0/350 | 100 %, 0/350 |
+
+- **Reproductible** : refait, le run à 3e-5 retrouve les mêmes chiffres à un cas près (89,3 %
+  contre 90,0 % d'exactitude, 15 sur-triages contre 14). Les pertes de validation coïncident à
+  10⁻³ près.
+- **2e-5 et 3e-5 ne se distinguent pas** à cet effectif : un cas de sous-triage et deux de
+  sur-triage d'écart.
+
+**Ce que le DPO corrige.** Sur les 7 sous-triages du SFT, 5 sont corrigés à 2e-5 et 6 à 3e-5 :
+allergie avec dyspnée, haute vélocité, fièvre ≥ 40 °C, AES VIH < 48 h, PA 68/37 mmHg, et la morsure
+de serpent à 3e-5 seulement. **Le seul cas qui résiste aux deux runs** est une escalade par une
+constante : une crise d'angoisse avec FR 44/min, classée modérée, car le modèle suit le critère
+du motif.
+
+**D'où vient le sur-triage.** 9 des 13 (2e-5) ou 10 des 15 (3e-5) sur-triages sont des cas 3B
+dont le critère modulateur sonne grave : FC > 110/min, impotence totale, perte de connaissance,
+glycémie ≥ 20 mmol/l. Le modèle cite **le bon critère FRENCH**, mais l'associe au tri 2 au lieu
+du 3B. La réponse reste cohérente : elle annonce MAXIMALE (tri FRENCH 2). Les autres sont des cas
+4 ou 5 passés en modérée.
+
+**Avec les règles sur les constantes** (`src/triage/rules.py`, le plancher prévu dans l'API) :
+
+| Validation | sous-triage max., modèle seul | avec les règles | sur-triage |
+|---|---|---|---|
+| `sft-r16-lr2e-4` | 7/66 | 4/66 (6,1 %) | 0,7 % |
+| `dpo-b0.1-lr2e-5` | 2/66 | 1/66 (1,5 %) | 8,7 % |
+| `dpo-b0.1-lr3e-5` | 1/66 | **0/66 (0,0 % [0,0 ; 5,5])** | 10,0 % |
+
+Les règles rattrapent précisément ce que le modèle manque, les escalades par les constantes, et
+n'ajoutent aucun sur-triage. Le modèle et les règles se complètent : le DPO corrige les critères
+propres au motif, les règles les constantes vitales.
+
+**Adaptateur proposé : `dpo-b0.1-lr3e-5`**, priorité à la sécurité : 0/66 cas maximale manqués
+avec les règles, au prix de 10 % de sur-triage. À confirmer avec le mentor (compromis entre
+sous-triage et sur-triage), puis à mesurer une seule fois sur le jeu de test.
