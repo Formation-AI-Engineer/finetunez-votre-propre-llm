@@ -1,0 +1,963 @@
+# Réalisations cliniques des motifs FRENCH pour générer des vignettes synthétiques.
+#
+# - `motif` doit correspondre exactement à un motif du tableau extrait du PDF SFMU ;
+# - chaque clé de `niveaux` doit être une colonne renseignée pour ce motif dans le tableau
+#   (vérifié par les tests), `defaut` désignant le niveau « Tri M » sans critère modulateur ;
+# - une alternative décrit UNE façon de remplir le critère : signes observés par l'IOA,
+#   formulation du patient, constantes imposées (plages [min, max]), âge ou sexe imposés.
+# - une phrase de `patient` écrite `{tiers: "…"}` est dite par un proche (« Mon mari… ») :
+#   le récit donne alors l'âge et les antécédents à la troisième personne.
+#
+# Ces vignettes sont synthétiques et non validées cliniquement (voir docs/POINT_MENTOR.md).
+
+antecedents_generiques:
+  - hypertension artérielle
+  - diabète de type 2
+  - dyslipidémie
+  - tabagisme actif
+  - asthme
+  - hypothyroïdie
+  - surpoids
+  - appendicectomie dans l'enfance
+  - fibrillation atriale sous anticoagulant
+  - insuffisance rénale chronique modérée
+  - syndrome anxio-dépressif
+
+motifs:
+  # ---------------------------------------------------------------- CARDIO-CIRCULATOIRE
+  - motif: "Arrêt cardiorespiratoire"
+    plaintes: ["effondrement brutal à domicile", "arrêt cardiaque devant témoins"]
+    patient: [{tiers: "Mon mari s'est effondré d'un coup, il ne répond plus et ne respire plus."}]
+    question: "Est-ce qu'il respire et réagit quand on lui parle ?"
+    age: [40, 85]
+    sexe: M
+    niveaux:
+      defaut:
+        - signes: ["patient inconscient, ne respire pas, massage cardiaque en cours par les secours"]
+          constantes: {gcs: [3, 3]}
+
+  - motif: "Hypotension artérielle"
+    plaintes: ["tension basse et fatigue", "hypotension découverte par l'infirmière à domicile"]
+    patient: ["Je me sens faible, l'infirmière à domicile a trouvé ma tension très basse."]
+    question: "Avez-vous eu un malaise ou perdu connaissance ?"
+    age: [50, 92]
+    antecedents: ["hypertension artérielle traitée", "insuffisance cardiaque", "diurétiques récemment augmentés"]
+    niveaux:
+      "1":
+        - signes: ["pâleur, marbrures des genoux"]
+          constantes: {systolic_bp: [55, 70], heart_rate: [105, 125]}
+      "2":
+        - signes: ["asthénie, sensation de malaise en position debout"]
+          constantes: {systolic_bp: [75, 90], heart_rate: [85, 110]}
+        - signes: ["extrémités froides"]
+          constantes: {systolic_bp: [92, 100], heart_rate: [105, 125]}
+      "3B":
+        - signes: ["asthénie, pas de malaise, conscience normale"]
+          constantes: {systolic_bp: [91, 100], heart_rate: [65, 95]}
+
+  - motif: "Douleur thoracique/ syndrome coronaire aigu (SCA)*"
+    plaintes: ["douleur thoracique", "oppression dans la poitrine"]
+    patient:
+      - "J'ai mal dans la poitrine depuis une heure, comme un poids."
+      - "J'ai une douleur au milieu du thorax qui ne passe pas."
+    question: "La douleur serre-t-elle ou irradie-t-elle vers le bras, la mâchoire ou le dos ?"
+    age: [35, 85]
+    antecedents: ["tabagisme actif", "hypertension artérielle", "diabète de type 2", "dyslipidémie", "infarctus il y a cinq ans"]
+    niveaux:
+      "1":
+        - signes: ["douleur rétrosternale constrictive irradiant au bras gauche", "ECG réalisé à l'accueil : sus-décalage du segment ST, typique de SCA"]
+          patient: "La douleur serre très fort et descend dans le bras gauche, je transpire."
+      "2":
+        - signes: ["douleur constrictive intense et persistante depuis 40 minutes", "ECG : anomalies non typiques de SCA"]
+          patient: "Ça serre très fort et ça ne passe pas depuis presque une heure."
+      "3A":
+        - signes: ["douleur thoracique modérée", "ECG normal", "antécédent de stent coronaire"]
+          contexte: "porteur d'un stent coronaire depuis 3 ans"
+      "3B":
+        - signes: ["douleur rétrosternale à type de serrement, cédée au repos", "ECG normal"]
+      "4":
+        - signes: ["douleur latéro-thoracique reproduite à la palpation, augmentée par les mouvements", "ECG normal"]
+          patient: "J'ai mal sur le côté de la poitrine quand je bouge ou que j'appuie dessus."
+          age: [20, 50]
+
+  - motif: "Tachycardie/tachyarythmie"
+    plaintes: ["cœur qui bat très vite", "accélération du rythme cardiaque"]
+    patient: ["Mon cœur bat très vite depuis ce matin, je le sens dans ma gorge."]
+    question: "Vous sentez-vous essoufflé{e} ou sur le point de vous évanouir ?"
+    age: [25, 85]
+    niveaux:
+      "1":
+        - signes: ["palpitations très rapides, sueurs"]
+          constantes: {heart_rate: [180, 210]}
+      "2":
+        - signes: ["palpitations régulières rapides, bonne conscience"]
+          constantes: {heart_rate: [130, 175]}
+      "3B":
+        - signes: ["palpitations bien tolérées"]
+          constantes: {heart_rate: [111, 128]}
+      "4":
+        - signes: ["épisode de palpitations résolutif, rythme régulier à l'accueil"]
+          constantes: {heart_rate: [70, 95]}
+          patient: "J'ai eu le cœur qui s'est emballé une demi-heure, c'est passé maintenant."
+
+  - motif: "Bradycardie/bradyarythmie"
+    plaintes: ["pouls lent", "bradycardie"]
+    patient: ["Ma montre indique un pouls très lent et je me sens bizarre."]
+    question: "Avez-vous eu des vertiges, un malaise ou une perte de connaissance ?"
+    age: [55, 92]
+    antecedents: ["traitement bêtabloquant", "fibrillation atriale"]
+    niveaux:
+      "1":
+        - signes: ["pâleur, sueurs"]
+          constantes: {heart_rate: [30, 40]}
+      "2":
+        - signes: ["vertiges et lipothymie, mauvaise tolérance"]
+          constantes: {heart_rate: [41, 50]}
+      "3B":
+        - signes: ["pas de malaise, bonne tolérance clinique"]
+          constantes: {heart_rate: [41, 50]}
+
+  - motif: "Dyspnée/insuffisance cardiaque*"
+    plaintes: ["essoufflement", "difficultés respiratoires avec jambes gonflées"]
+    patient: ["J'ai de plus en plus de mal à respirer, je dors assis depuis deux nuits."]
+    question: "Arrivez-vous à parler et à finir vos phrases sans reprendre votre souffle ?"
+    age: [60, 92]
+    antecedents: ["insuffisance cardiaque", "cardiopathie ischémique", "fibrillation atriale"]
+    niveaux:
+      "1":
+        - signes: ["détresse respiratoire, sueurs, cyanose des lèvres"]
+          constantes: {spo2: [78, 85], respiratory_rate: [34, 44]}
+        - signes: ["polypnée importante"]
+          constantes: {respiratory_rate: [40, 46], spo2: [88, 92]}
+      "2":
+        - signes: ["dyspnée à la parole, orthopnée"]
+          constantes: {spo2: [91, 94], respiratory_rate: [24, 29]}
+        - signes: ["tirage modéré"]
+          constantes: {spo2: [86, 90], respiratory_rate: [24, 29]}
+      defaut:
+        - signes: ["dyspnée d'effort modérée, parle sans difficulté, œdèmes des chevilles"]
+          constantes: {spo2: [93, 97], respiratory_rate: [18, 24]}
+
+  - motif: "Palpitations"
+    plaintes: ["palpitations"]
+    patient: ["Je sens mon cœur qui bat fort et irrégulièrement depuis hier."]
+    question: "Vous êtes-vous senti mal ou avez-vous failli perdre connaissance ?"
+    age: [20, 75]
+    niveaux:
+      "1":
+        - signes: ["palpitations très rapides"]
+          constantes: {heart_rate: [180, 200]}
+      "2":
+        - signes: ["palpitations rapides persistantes"]
+          constantes: {heart_rate: [130, 170]}
+      "3B":
+        - signes: ["sensation de malaise associée aux palpitations"]
+          constantes: {heart_rate: [80, 110]}
+        - signes: ["palpitations persistantes"]
+          constantes: {heart_rate: [112, 128]}
+      defaut:
+        - signes: ["palpitations intermittentes, pas de malaise, rythme régulier à l'accueil"]
+          constantes: {heart_rate: [65, 95]}
+
+  - motif: "Hypertension artérielle"
+    plaintes: ["tension élevée", "hypertension mesurée en pharmacie"]
+    patient: ["Le pharmacien a trouvé ma tension très haute, il m'a dit de venir."]
+    question: "Avez-vous mal à la tête, un trouble de la vue, une douleur thoracique ou une faiblesse d'un côté ?"
+    age: [45, 85]
+    antecedents: ["hypertension artérielle mal équilibrée", "oubli du traitement depuis une semaine"]
+    niveaux:
+      "2":
+        - signes: ["aucun signe fonctionnel associé"]
+          constantes: {systolic_bp: [220, 240]}
+        - signes: ["céphalées et vision floue associées"]
+          constantes: {systolic_bp: [185, 215]}
+      "3B":
+        - signes: ["aucun signe fonctionnel associé (pas de céphalée, ni trouble visuel, ni douleur thoracique)"]
+          constantes: {systolic_bp: [180, 210]}
+      "4":
+        - signes: ["aucun signe fonctionnel, contrôle tensionnel à l'accueil"]
+          constantes: {systolic_bp: [150, 175]}
+
+  - motif: "Membre douloureux/ froid ou pâle/ischémie*"
+    plaintes: ["jambe froide et douloureuse", "douleur brutale du membre inférieur"]
+    patient: ["Ma jambe est devenue froide et très douloureuse d'un coup."]
+    question: "Depuis combien de temps et pouvez-vous bouger le pied ?"
+    age: [55, 90]
+    antecedents: ["artériopathie des membres inférieurs", "fibrillation atriale", "tabagisme actif"]
+    niveaux:
+      "2":
+        - signes: ["membre froid et pâle depuis 3 heures"]
+        - signes: ["pied cyanosé, déficit moteur des orteils"]
+      "3B":
+        - signes: ["membre pâle et douloureux depuis plus de 24 heures, motricité conservée"]
+          patient: "Ma jambe est froide et me fait mal depuis deux jours."
+
+  - motif: "Membre douloureux/ chaud ou rouge/phlébite*"
+    plaintes: ["mollet rouge et douloureux", "suspicion de phlébite"]
+    patient: ["Mon mollet est gonflé, rouge et chaud depuis deux jours."]
+    question: "Êtes-vous essoufflé ou avez-vous mal dans la poitrine ?"
+    age: [30, 85]
+    antecedents: ["chirurgie du genou récente", "voyage en avion de 10 heures", "contraception œstroprogestative"]
+    niveaux:
+      "3B":
+        - signes: ["mollet nettement inflammatoire, signes locaux francs"]
+        - signes: ["thrombose veineuse fémorale (proximale) retrouvée à l'échographie du médecin traitant"]
+      "4":
+        - signes: ["signes locaux modérés, pas de dyspnée"]
+        - signes: ["thrombose veineuse distale du mollet à l'échographie, pas de dyspnée"]
+
+  # ---------------------------------------------------------------------- INFECTIOLOGIE
+  - motif: "Fièvre"
+    plaintes: ["fièvre", "fièvre depuis trois jours"]
+    patient: ["J'ai de la fièvre depuis trois jours et je suis épuisé{e}."]
+    question: "Avez-vous mal à la tête, des taches sur la peau ou êtes-vous confus ?"
+    age: [18, 85]
+    niveaux:
+      "2":
+        - signes: ["frissons"]
+          constantes: {temperature: [40.0, 40.8]}
+        - signes: ["céphalées intenses et taches purpuriques qui ne s'effacent pas à la pression"]
+          constantes: {temperature: [38.5, 39.5]}
+          patient: "J'ai de la fièvre, très mal à la tête et des petites taches rouges sur les jambes."
+        - signes: ["confusion, propos incohérents selon la famille"]
+          constantes: {temperature: [38.3, 39.5]}
+      "3B":
+        - signes: ["mauvaise tolérance, asthénie marquée"]
+          constantes: {temperature: [38.5, 39.6], heart_rate: [112, 125], systolic_bp: [105, 115]}
+      defaut:
+        - signes: ["bonne tolérance, état général conservé"]
+          constantes: {temperature: [38.0, 39.2]}
+
+  - motif: "AES et/ou liquide biologique"
+    plaintes: ["piqûre accidentelle avec une aiguille usagée", "accident d'exposition au sang"]
+    patient: ["Je me suis piqué{e} avec une aiguille d'un patient au travail."]
+    question: "Quand l'exposition a-t-elle eu lieu et connaît-on le statut VIH de la personne source ?"
+    age: [20, 60]
+    niveaux:
+      "2":
+        - signes: ["piqueuse profonde il y a 2 heures, patient source VIH connu"]
+      "5":
+        - signes: ["exposition au sang il y a 3 jours"]
+          patient: "Je me suis piqué{e} avec une aiguille il y a trois jours."
+      defaut:
+        - signes: ["projection sur peau saine il y a 1 heure, statut de la source inconnu"]
+
+  - motif: "Exposition à une maladie contagieuse"
+    plaintes: ["contact avec une personne malade"]
+    patient: ["Mon collègue a une méningite, j'étais avec lui hier, que dois-je faire ?"]
+    question: "De quelle maladie s'agit-il et quand avez-vous été en contact ?"
+    age: [18, 60]
+    niveaux:
+      "3B":
+        - signes: ["contact proche avec un cas de méningite à méningocoque il y a 24 heures, asymptomatique"]
+      "5":
+        - signes: ["contact avec un enfant atteint de varicelle, asymptomatique"]
+          patient: "Mon neveu a la varicelle, je l'ai gardé ce week-end."
+
+  # -------------------------------------------------------------------------- ABDOMINAL
+  - motif: "Vomissement de sang/ hématémèse"
+    plaintes: ["vomissements de sang"]
+    patient: ["J'ai vomi du sang tout à l'heure."]
+    question: "Quelle quantité de sang avez-vous vomie : quelques filets ou beaucoup ?"
+    age: [35, 85]
+    antecedents: ["cirrhose alcoolique", "ulcère gastrique", "traitement anti-inflammatoire"]
+    niveaux:
+      "2":
+        - signes: ["hématémèse abondante de sang rouge à deux reprises"]
+          patient: "J'ai vomi beaucoup de sang rouge, deux fois."
+      "3B":
+        - signes: ["vomissements striés de sang après des efforts de vomissement"]
+          patient: "J'ai vomi plusieurs fois et il y avait quelques filets de sang."
+      defaut:
+        - signes: ["vomissement noirâtre unique, pas de malaise"]
+
+  - motif: "Maelena/rectorragies"
+    plaintes: ["sang dans les selles", "selles noires"]
+    patient: ["J'ai du sang rouge quand je vais aux toilettes."]
+    question: "Est-ce beaucoup de sang ou juste quelques traces sur le papier ?"
+    age: [30, 85]
+    niveaux:
+      "2":
+        - signes: ["rectorragies abondantes à répétition"]
+      "3B":
+        - signes: ["selles souillées de sang, pas de malaise"]
+      defaut:
+        - signes: ["selles noires et poisseuses depuis la veille, pas de malaise"]
+
+  - motif: "Douleur abdominale"
+    plaintes: ["douleur abdominale", "mal au ventre"]
+    patient:
+      - "J'ai très mal au ventre depuis ce matin."
+      - "J'ai une douleur dans le bas du ventre à droite depuis hier."
+    question: "Sur une échelle de 0 à 10, quelle est l'intensité de la douleur ?"
+    age: [16, 85]
+    niveaux:
+      "2":
+        - signes: ["douleur sévère cotée 9/10, patient prostré"]
+          patient: "J'ai une douleur insupportable dans le ventre, je ne tiens pas en place."
+        - signes: ["douleur abdominale avec mauvaise tolérance, pâleur et sueurs"]
+      "5":
+        - signes: ["douleur régressive, abdomen indolore à la palpation"]
+          patient: "J'avais mal au ventre cette nuit, ça va beaucoup mieux maintenant."
+      defaut:
+        - signes: ["douleur cotée 5/10 de la fosse iliaque droite, nausées"]
+        - signes: ["douleur épigastrique modérée cotée 4/10 depuis la veille"]
+
+  - motif: "Constipation"
+    plaintes: ["constipation"]
+    patient: ["Je ne suis pas allé{e} à la selle depuis cinq jours."]
+    question: "Avez-vous des vomissements, mal au ventre ou plus aucun gaz ?"
+    age: [20, 90]
+    niveaux:
+      "2":
+        - signes: ["arrêt des matières et des gaz, vomissements, abdomen distendu"]
+      "3B":
+        - signes: ["douleurs abdominales associées, pas de vomissement"]
+      defaut:
+        - signes: ["pas de douleur, pas de vomissement, gaz conservés"]
+
+  - motif: "Vomissements"
+    plaintes: ["vomissements"]
+    patient: ["Je vomis depuis hier soir."]
+    question: "Avez-vous mal au ventre et arrivez-vous à boire ?"
+    age: [16, 80]
+    niveaux:
+      "2":
+        - signes: ["vomissements incoercibles, arrêt du transit, douleurs abdominales"]
+      "3A":
+        - signes: ["vomissements répétés depuis la veille chez un nourrisson"]
+          age: [0.3, 2]
+      "3B":
+        - signes: ["vomissements abondants, ne garde rien"]
+      defaut:
+        - signes: ["deux vomissements, boit sans difficulté"]
+
+  - motif: "Diarrhée"
+    plaintes: ["diarrhée"]
+    patient: ["J'ai la diarrhée depuis deux jours."]
+    question: "Combien de selles par jour et arrivez-vous à boire ?"
+    age: [16, 80]
+    niveaux:
+      "3A":
+        - signes: ["selles liquides fréquentes chez un enfant de moins de deux ans"]
+          age: [0.5, 2]
+      "3B":
+        - signes: ["diarrhée abondante, plus de dix selles par jour, mauvaise tolérance"]
+          constantes: {heart_rate: [105, 125]}
+      defaut:
+        - signes: ["quatre selles liquides par jour, bonne tolérance, boit bien"]
+
+  - motif: "Hoquet"
+    plaintes: ["hoquet"]
+    patient: ["J'ai le hoquet depuis ce matin et ça ne s'arrête pas."]
+    question: "Depuis combien d'heures dure ce hoquet ?"
+    age: [25, 80]
+    niveaux:
+      "3B":
+        - signes: ["hoquet incessant depuis plus de 12 heures"]
+          patient: "J'ai le hoquet sans arrêt depuis hier soir."
+      defaut:
+        - signes: ["hoquet depuis 3 heures, gêne modérée"]
+
+  # -------------------------------------------------------------------- GENITO-URINAIRE
+  - motif: "Douleur de la fosse lombaire/du flanc"
+    plaintes: ["douleur lombaire", "colique néphrétique"]
+    patient: ["J'ai une douleur horrible dans le dos, sur le côté, qui descend vers l'aine."]
+    question: "La douleur est-elle intense et avez-vous de la fièvre ?"
+    age: [20, 70]
+    niveaux:
+      "2":
+        - signes: ["douleur lombaire intense cotée 9/10, agitation"]
+      "5":
+        - signes: ["douleur régressive, indolore à l'examen"]
+          patient: "J'ai eu mal dans le dos cette nuit mais là ça ne me fait plus mal."
+      defaut:
+        - signes: ["douleur lombaire droite modérée cotée 5/10"]
+
+  - motif: "Rétention d'urine/anurie"
+    plaintes: ["impossibilité d'uriner"]
+    patient: ["Je n'arrive plus à uriner depuis ce matin."]
+    question: "Avez-vous très mal au bas-ventre ?"
+    age: [55, 90]
+    sexe: M
+    antecedents: ["hypertrophie bénigne de la prostate"]
+    niveaux:
+      "2":
+        - signes: ["douleur sus-pubienne intense, globe vésical, agitation"]
+      defaut:
+        - signes: ["gêne sus-pubienne modérée, dernière miction il y a 8 heures"]
+
+  - motif: "Douleur de bourse/ orchite*/torsion testicule*"
+    plaintes: ["douleur testiculaire"]
+    patient: ["J'ai une douleur très forte dans un testicule depuis une heure."]
+    question: "La douleur a-t-elle commencé brutalement ?"
+    age: [12, 35]
+    sexe: M
+    niveaux:
+      "2":
+        - signes: ["douleur testiculaire brutale et intense depuis 1 heure, suspicion de torsion"]
+      defaut:
+        - signes: ["douleur scrotale progressive depuis 2 jours, modérée, avec brûlures urinaires"]
+
+  - motif: "Dysurie/brûlure mictionnelle / infection ?"
+    plaintes: ["brûlures urinaires"]
+    patient: ["Ça me brûle quand j'urine depuis deux jours."]
+    question: "Avez-vous de la fièvre ou mal dans le dos ?"
+    age: [18, 70]
+    sexe: F
+    niveaux:
+      "3B":
+        - signes: ["brûlures mictionnelles avec fièvre"]
+          constantes: {temperature: [38.5, 39.4]}
+      "4":
+        - signes: ["brûlures mictionnelles chez une enfant de 6 ans"]
+          age: [4, 10]
+      defaut:
+        - signes: ["brûlures mictionnelles et envies fréquentes, pas de fièvre"]
+          constantes: {temperature: [36.6, 37.4]}
+
+  # ----------------------------------------------------------------- GYNECO-OBSTETRIQUE
+  - motif: "Accouchement imminent ou réalisé"
+    plaintes: ["contractions rapprochées, envie de pousser"]
+    patient: ["Je suis enceinte de neuf mois, j'ai très envie de pousser."]
+    question: "À quel terme êtes-vous et avez-vous perdu les eaux ?"
+    age: [20, 40]
+    sexe: F
+    niveaux:
+      defaut:
+        - signes: ["grossesse à terme, contractions toutes les 2 minutes, envie irrépressible de pousser"]
+
+  - motif: "Problème de grossesse 1er et 2ème trimestre"
+    plaintes: ["grossesse avec saignements", "douleur pendant la grossesse"]
+    patient: ["Je suis enceinte de deux mois et je saigne un peu."]
+    question: "Avez-vous mal au ventre et perdez-vous beaucoup de sang ?"
+    age: [20, 42]
+    sexe: F
+    niveaux:
+      "2":
+        - signes: ["grossesse de 8 semaines, métrorragies et douleur pelvienne"]
+      defaut:
+        - signes: ["grossesse de 12 semaines, nausées et vomissements, pas de saignement ni douleur"]
+
+  - motif: "Méno-metrorragie"
+    plaintes: ["saignements vaginaux"]
+    patient: ["Je saigne beaucoup plus que pendant mes règles."]
+    question: "Pourriez-vous être enceinte ?"
+    age: [18, 50]
+    sexe: F
+    niveaux:
+      "2":
+        - signes: ["saignement abondant, change de protection toutes les heures"]
+        - signes: ["saignements chez une patiente avec test de grossesse positif"]
+      defaut:
+        - signes: ["règles plus abondantes que d'habitude, pas de grossesse possible"]
+
+  # ----------------------------------------------------------------------- INTOXICATION
+  - motif: "Intoxication médicamenteuse"
+    plaintes: ["ingestion volontaire de médicaments"]
+    patient: ["J'ai avalé une boîte de comprimés tout à l'heure."]
+    question: "Quels médicaments, combien et à quelle heure ?"
+    age: [16, 70]
+    niveaux:
+      "2":
+        - signes: ["ingestion volontaire de 20 comprimés de paracétamol il y a 2 heures, intention suicidaire"]
+        - signes: ["ingestion de bêtabloquants (toxique cardiotrope)"]
+      "3A":
+        - signes: ["ingestion accidentelle de comprimés chez un enfant"]
+          age: [2, 6]
+      "5":
+        - signes: ["ingestion de quelques comprimés il y a plus de 24 heures, aucune mauvaise tolérance"]
+      defaut:
+        - signes: ["ingestion de 4 comprimés de somnifère, bien toléré, pas d'intention suicidaire"]
+
+  - motif: "Comportement ébrieux / ivresse"
+    plaintes: ["ivresse"]
+    patient: [{tiers: "Mon ami a beaucoup bu, il est difficile à réveiller."}]
+    question: "Réagit-il quand on lui parle ?"
+    age: [18, 60]
+    sexe: M
+    niveaux:
+      "1":
+        - signes: ["ne répond pas aux stimulations"]
+          constantes: {gcs: [5, 8]}
+      "2":
+        - signes: ["agitation et agressivité verbale"]
+        - signes: ["somnolent, ouvre les yeux à la voix"]
+          constantes: {gcs: [10, 13]}
+      defaut:
+        - signes: ["haleine œnolique, calme, cohérent"]
+          constantes: {gcs: [15, 15]}
+
+  # ------------------------------------------------------------------------- NEUROLOGIE
+  - motif: "Altération de la conscience/coma"
+    plaintes: ["somnolence inhabituelle", "patient difficile à réveiller"]
+    patient: [{tiers: "Ma mère est très somnolente depuis ce matin, on n'arrive pas à la réveiller vraiment."}]
+    question: "Ouvre-t-elle les yeux et répond-elle quand on lui parle ?"
+    age: [60, 95]
+    sexe: F
+    niveaux:
+      "1":
+        - signes: ["ne répond pas, réagit uniquement à la douleur"]
+          constantes: {gcs: [5, 8]}
+      "2":
+        - signes: ["somnolente, ouvre les yeux à la voix, réponses confuses"]
+          constantes: {gcs: [10, 13]}
+
+  - motif: "Déficit moteur, sensitif, sensoriel ou du langage/AVC"
+    plaintes: ["faiblesse d'un côté du corps", "difficultés à parler"]
+    patient:
+      - {tiers: "Mon mari n'arrive plus à parler correctement et sa bouche est de travers."}
+      - "Je n'arrive plus à bouger mon bras droit."
+    question: "À quelle heure les symptômes ont-ils commencé ?"
+    age: [50, 90]
+    sexe: M
+    antecedents: ["hypertension artérielle", "fibrillation atriale", "diabète de type 2"]
+    niveaux:
+      "1":
+        - signes: ["hémiplégie droite et aphasie apparues il y a 1 heure"]
+        - signes: ["paralysie faciale et faiblesse du bras gauche depuis 2 heures"]
+      "3B":
+        - signes: ["engourdissement de la main gauche apparu il y a 3 jours, stable"]
+          patient: "J'ai la main gauche engourdie depuis trois jours, ça ne change pas."
+      defaut:
+        - signes: ["faiblesse de la jambe gauche apparue il y a 8 heures"]
+
+  - motif: "Convulsions"
+    plaintes: ["crise convulsive"]
+    patient: [{tiers: "Mon frère a fait une crise d'épilepsie, il a tremblé de partout."}]
+    question: "Est-il revenu complètement à lui depuis la crise ?"
+    age: [16, 70]
+    sexe: M
+    antecedents: ["épilepsie connue"]
+    niveaux:
+      "2":
+        - signes: ["deuxième crise en une heure"]
+        - signes: ["confusion persistante 40 minutes après la crise"]
+        - signes: ["crise survenue après un traumatisme crânien"]
+      "3B":
+        - signes: ["crise unique, récupération complète, épileptique connu"]
+      defaut:
+        - signes: ["crise unique il y a 1 heure, légère somnolence post-critique"]
+
+  - motif: "Céphalée"
+    plaintes: ["mal de tête", "céphalées"]
+    patient:
+      - "J'ai un mal de tête terrible, apparu d'un coup."
+      - "J'ai ma migraine habituelle, mais les médicaments ne marchent pas."
+    question: "Ce mal de tête est-il apparu brutalement et est-ce inhabituel pour vous ?"
+    age: [18, 75]
+    niveaux:
+      "2":
+        - signes: ["céphalée brutale en coup de tonnerre, la pire de sa vie"]
+          patient: "J'ai eu d'un coup un mal de tête terrible, le pire de ma vie."
+        - signes: ["premier épisode de céphalée intense"]
+      "3B":
+        - signes: ["céphalée habituelle de type migraineux, résistante au traitement habituel"]
+      defaut:
+        - signes: ["céphalée modérée progressive depuis 2 jours"]
+
+  - motif: "Vertiges/trouble de l'équilibre"
+    plaintes: ["vertiges"]
+    patient: ["Tout tourne autour de moi depuis ce matin."]
+    question: "Avez-vous mal à la tête, du mal à parler ou une faiblesse d'un côté ?"
+    age: [30, 85]
+    niveaux:
+      "2":
+        - signes: ["vertiges avec trouble de la parole et difficulté à marcher"]
+        - signes: ["vertiges avec céphalée brutale"]
+      "5":
+        - signes: ["troubles de l'équilibre anciens et stables, connus du médecin traitant"]
+      defaut:
+        - signes: ["vertiges rotatoires aux changements de position, sans signe neurologique"]
+
+  # ---------------------------------------------------------- OPHTALMOLOGIE / ORL / PEAU
+  - motif: "Trouble visuel /œil douloureux / cécité"
+    plaintes: ["baisse de vision", "œil douloureux"]
+    patient: ["Je ne vois plus rien d'un œil depuis une heure."]
+    question: "La baisse de vision est-elle apparue brutalement ?"
+    age: [40, 85]
+    niveaux:
+      "2":
+        - signes: ["baisse d'acuité visuelle brutale de l'œil droit"]
+      defaut:
+        - signes: ["vision un peu floue depuis une semaine, sans douleur"]
+
+  - motif: "Epistaxis"
+    plaintes: ["saignement de nez"]
+    patient: ["Je saigne du nez depuis une demi-heure."]
+    question: "Le saignement est-il arrêté ?"
+    age: [20, 90]
+    antecedents: ["traitement anticoagulant", "hypertension artérielle"]
+    niveaux:
+      "2":
+        - signes: ["saignement abondant toujours actif malgré la compression"]
+      "3B":
+        - signes: ["saignement abondant, arrêté à l'arrivée"]
+      "5":
+        - signes: ["saignement peu abondant, arrêté spontanément"]
+          patient: "J'ai un peu saigné du nez, c'est arrêté maintenant."
+
+  - motif: "Douleur de gorge / angine / stomatite"
+    plaintes: ["mal de gorge"]
+    patient: ["J'ai mal à la gorge depuis trois jours."]
+    question: "Arrivez-vous à avaler et à boire ?"
+    age: [16, 60]
+    niveaux:
+      "3B":
+        - signes: ["ne peut plus avaler sa salive"]
+          patient: "Je n'arrive plus du tout à avaler, même ma salive."
+      defaut:
+        - signes: ["odynophagie modérée, boit normalement"]
+          constantes: {temperature: [37.8, 38.6]}
+
+  - motif: "Erythème étendu et autres éruptions / oèdeme spontané"
+    plaintes: ["éruption cutanée", "plaques rouges sur la peau"]
+    patient: ["J'ai des plaques rouges qui grattent partout depuis ce midi."]
+    question: "Avez-vous du mal à respirer ou le visage, les lèvres gonflés ?"
+    age: [16, 70]
+    niveaux:
+      "2":
+        - signes: ["urticaire généralisée avec œdème des lèvres et gêne respiratoire après prise d'un antibiotique (anaphylaxie)"]
+          constantes: {systolic_bp: [95, 110]}
+      "3B":
+        - signes: ["éruption fébrile"]
+          constantes: {temperature: [38.6, 39.5]}
+      "4":
+        - signes: ["éruption étendue au tronc et aux membres, sans fièvre ni gêne respiratoire"]
+      "5":
+        - signes: ["plaque rouge localisée de l'avant-bras, sans signe général"]
+
+  - motif: "Morsure, piqûre, prurit, parasitose"
+    plaintes: ["piqûre d'insecte", "morsure"]
+    patient: ["J'ai été piqué{e} par une guêpe au bras."]
+    question: "Avez-vous du mal à respirer ou des plaques ailleurs sur le corps ?"
+    age: [10, 80]
+    niveaux:
+      "2":
+        - signes: ["morsure de vipère à la cheville il y a 30 minutes"]
+      "3B":
+        - signes: ["morsure de chien à la main, rouge et chaude depuis la veille, fièvre"]
+          constantes: {temperature: [38.4, 39.2]}
+      "4":
+        - signes: ["réaction locale étendue à tout l'avant-bras"]
+      "5":
+        - signes: ["piqûre de guêpe, réaction localisée"]
+
+  # ------------------------------------------------------------------------- PEDIATRIE
+  - motif: "Dyspnée avec sifflement respiratoire"
+    plaintes: ["bébé qui siffle en respirant"]
+    patient: ["Mon bébé siffle quand il respire et il tousse."]
+    question: "Respire-t-il vite ou avec difficulté, en creusant sous les côtes ?"
+    age: [0.3, 2]
+    niveaux:
+      "3A":
+        - signes: ["sifflement sans dyspnée, s'alimente correctement"]
+      defaut:
+        - signes: ["sifflement avec tirage intercostal et difficultés à boire"]
+          constantes: {spo2: [91, 94]}
+
+  - motif: "Fièvre ≤ 3 mois"
+    plaintes: ["fièvre chez un nourrisson"]
+    patient: ["Mon bébé de deux mois a de la fièvre."]
+    question: "Quel âge a-t-il exactement et quelle température ?"
+    age: [0.05, 0.25]
+    niveaux:
+      defaut:
+        - signes: ["fièvre chez un nourrisson de moins de 3 mois"]
+          constantes: {temperature: [38.2, 39.0]}
+
+  - motif: "Convulsion hyperthermique"
+    plaintes: ["convulsion avec fièvre chez l'enfant"]
+    patient: ["Ma fille a fait une convulsion avec de la fièvre."]
+    question: "Combien de temps a duré la crise et est-elle revenue à elle ?"
+    age: [0.6, 4]
+    sexe: F
+    niveaux:
+      "2":
+        - signes: ["crise de plus de 10 minutes"]
+        - signes: ["deuxième crise dans la journée"]
+      "3A":
+        - signes: ["crise brève, récupération complète, enfant réactif"]
+          constantes: {temperature: [38.8, 39.8]}
+
+  - motif: "Pleurs incoercibles"
+    plaintes: ["bébé qui pleure sans arrêt"]
+    patient: ["Mon bébé pleure sans arrêt depuis trois heures."]
+    question: "Pleure-t-il encore maintenant ?"
+    age: [0.1, 1]
+    niveaux:
+      "3A":
+        - signes: ["pleurs persistants dans le box de l'IOA, inconsolable"]
+      defaut:
+        - signes: ["pleurs depuis 3 heures à la maison, calme à l'accueil"]
+
+  # ------------------------------------------------------------------------ PSYCHIATRIE
+  - motif: "Idée / comportement suicidaire"
+    plaintes: ["idées suicidaires"]
+    patient: ["Je n'en peux plus, je pense à en finir."]
+    question: "Avez-vous pensé à un moyen ou fait quelque chose pour vous faire du mal ?"
+    age: [16, 75]
+    niveaux:
+      defaut:
+        - signes: ["idées suicidaires exprimées avec scénario"]
+
+  - motif: "Anxiété / dépression / consultation psychiatrique"
+    plaintes: ["crise d'angoisse"]
+    patient: ["Je fais une crise d'angoisse, je n'arrive pas à me calmer."]
+    question: "Avez-vous des idées de vous faire du mal ?"
+    age: [18, 65]
+    niveaux:
+      "2":
+        - signes: ["attaque de panique majeure, hyperventilation, ne se calme pas"]
+      "3B":
+        - signes: ["demande d'hospitalisation en psychiatrie, sans idée suicidaire"]
+      defaut:
+        - signes: ["anxiété modérée, demande d'avis, sans idée suicidaire"]
+
+  # ----------------------------------------------------------------------- RESPIRATOIRE
+  - motif: "Dyspnée / insuffisance respiratoire"
+    plaintes: ["essoufflement", "difficultés à respirer"]
+    patient:
+      - "J'ai du mal à respirer depuis ce matin."
+      - "Je suis très essoufflé{e}, même assis{e}."
+    question: "Arrivez-vous à parler et à finir vos phrases sans reprendre votre souffle ?"
+    age: [20, 90]
+    antecedents: ["BPCO", "asthme", "fibrose pulmonaire"]
+    niveaux:
+      "1":
+        - signes: ["détresse respiratoire, sueurs, cyanose"]
+          constantes: {spo2: [78, 85], respiratory_rate: [32, 44]}
+        - signes: ["polypnée importante"]
+          constantes: {respiratory_rate: [40, 46], spo2: [88, 92]}
+      "2":
+        - signes: ["dyspnée à la parole, tirage sus-sternal"]
+          constantes: {spo2: [91, 94], respiratory_rate: [24, 29]}
+          patient: "Je n'arrive pas à finir mes phrases sans reprendre mon souffle."
+        - signes: ["polypnée"]
+          constantes: {spo2: [91, 94], respiratory_rate: [30, 38]}
+        - signes: ["dyspnée modérée"]
+          constantes: {spo2: [86, 90], respiratory_rate: [22, 28]}
+      defaut:
+        - signes: ["dyspnée d'effort, parle sans difficulté"]
+          constantes: {spo2: [93, 97], respiratory_rate: [16, 24]}
+
+  - motif: "Asthme ou aggravation BPCO"
+    plaintes: ["crise d'asthme"]
+    patient: ["Je fais une crise d'asthme, ma Ventoline ne marche pas."]
+    question: "Arrivez-vous à parler normalement ?"
+    age: [16, 70]
+    antecedents: ["asthme", "BPCO"]
+    niveaux:
+      "1":
+        - signes: ["détresse respiratoire, ne peut plus parler, sueurs"]
+          constantes: {spo2: [80, 85], respiratory_rate: [32, 40]}
+      "2":
+        - signes: ["dyspnée à la parole, DEP à 180 l/min"]
+          constantes: {spo2: [91, 94], respiratory_rate: [24, 29]}
+      "4":
+        - signes: ["gêne respiratoire légère, asthme connu, DEP à 350 l/min"]
+          constantes: {spo2: [95, 98], respiratory_rate: [16, 22]}
+      defaut:
+        - signes: ["sifflements, DEP à 250 l/min, parle sans difficulté"]
+          constantes: {spo2: [93, 96], respiratory_rate: [20, 26]}
+
+  - motif: "Hémoptysie"
+    plaintes: ["crachats de sang"]
+    patient: ["Je crache du sang quand je tousse."]
+    question: "Est-ce beaucoup de sang et à plusieurs reprises ?"
+    age: [35, 85]
+    niveaux:
+      "2":
+        - signes: ["hémoptysies répétées de sang rouge"]
+      defaut:
+        - signes: ["crachats striés de sang à une reprise"]
+
+  - motif: "Toux / bronchite"
+    plaintes: ["toux"]
+    patient: ["Je tousse depuis une semaine."]
+    question: "Avez-vous de la fièvre ou du mal à respirer ?"
+    age: [18, 75]
+    niveaux:
+      "3B":
+        - signes: ["toux grasse avec fièvre"]
+          constantes: {temperature: [38.5, 39.4]}
+      defaut:
+        - signes: ["toux sèche, pas de fièvre, pas de gêne respiratoire"]
+          constantes: {temperature: [36.5, 37.4]}
+
+  # ------------------------------------------------------------------------ RHUMATOLOGIE
+  - motif: "Douleur rachidienne (cervicale, dorsale ou lombaire)"
+    plaintes: ["mal de dos", "lumbago"]
+    patient: ["J'ai très mal dans le bas du dos depuis que j'ai porté un carton."]
+    question: "Avez-vous des fourmillements ou une faiblesse dans les jambes ?"
+    age: [25, 70]
+    niveaux:
+      "2":
+        - signes: ["faiblesse de la jambe droite associée"]
+      "3B":
+        - signes: ["fourmillements de la jambe gauche"]
+        - signes: ["lombalgie fébrile"]
+          constantes: {temperature: [38.5, 39.2]}
+      defaut:
+        - signes: ["lombalgie mécanique sans irradiation ni déficit"]
+
+  - motif: "Douleur articulaire/arthrose/arthrite"
+    plaintes: ["genou douloureux"]
+    patient: ["Mon genou est gonflé et douloureux depuis hier."]
+    question: "Avez-vous de la fièvre ?"
+    age: [30, 85]
+    niveaux:
+      "3B":
+        - signes: ["genou rouge, chaud et gonflé, fièvre"]
+          constantes: {temperature: [38.4, 39.3]}
+      defaut:
+        - signes: ["douleur du genou d'horaire mécanique, connue arthrosique"]
+
+  # ---------------------------------------------------------------------- TRAUMATOLOGIE
+  - motif: "Traumatisme abdomen/thorax/cervical"
+    plaintes: ["traumatisme du thorax", "accident de la route"]
+    patient: ["J'ai eu un accident de voiture, j'ai mal à la poitrine."]
+    question: "Comment s'est passé l'accident et à quelle vitesse ?"
+    age: [18, 70]
+    niveaux:
+      "1":
+        - signes: ["plaie pénétrante thoracique par arme blanche"]
+      "2":
+        - signes: ["accident de voiture à 90 km/h, douleur thoracique"]
+      "3B":
+        - signes: ["chute de sa hauteur sur le thorax, douleur intense et mauvaise tolérance"]
+      "4":
+        - signes: ["chute de sa hauteur sur le thorax, douleur modérée bien tolérée"]
+
+  - motif: "Plaie"
+    plaintes: ["plaie", "coupure"]
+    patient: ["Je me suis coupé{e} en cuisinant."]
+    question: "Est-ce que ça saigne encore beaucoup ?"
+    age: [16, 80]
+    niveaux:
+      "2":
+        - signes: ["plaie de la cuisse avec saignement actif abondant"]
+      "3B":
+        - signes: ["plaie profonde de la main par couteau"]
+      "4":
+        - signes: ["plaie superficielle de l'avant-bras, saignement arrêté"]
+      "5":
+        - signes: ["excoriations du genou après une chute"]
+
+  - motif: "Traumatisme d'épaule ou distal de membre"
+    plaintes: ["chute sur le poignet", "entorse de cheville"]
+    patient:
+      - "Je suis tombé{e} sur le poignet, il me fait mal."
+      - "Je me suis tordu la cheville au football."
+    question: "Pouvez-vous bouger le membre et est-il déformé ?"
+    age: [10, 85]
+    niveaux:
+      "2":
+        - signes: ["chute à moto, avant-bras très déformé, main pâle"]
+      "3B":
+        - signes: ["poignet déformé, impotence totale"]
+      "4":
+        - signes: ["cheville gonflée, appui difficile mais possible"]
+      "5":
+        - signes: ["douleur légère de la cheville, ni impotence ni déformation"]
+
+  - motif: "Traumatisme crânien"
+    plaintes: ["chute avec choc à la tête"]
+    patient: ["Je suis tombé{e} et je me suis cogné la tête."]
+    question: "Avez-vous perdu connaissance ou prenez-vous un anticoagulant ?"
+    age: [18, 92]
+    niveaux:
+      "1":
+        - signes: ["ne répond pas aux ordres"]
+          constantes: {gcs: [5, 8]}
+      "2":
+        - signes: ["vomissements répétés depuis la chute"]
+        - signes: ["chute sous anticoagulant (AVK)"]
+          contexte: "traité par AVK pour une fibrillation atriale"
+        - signes: ["confus, ouvre les yeux à la voix"]
+          constantes: {gcs: [11, 13]}
+      "3B":
+        - signes: ["perte de connaissance brève lors de la chute, examen normal"]
+      "4":
+        - signes: ["hématome du cuir chevelu, pas de perte de connaissance"]
+      defaut:
+        - signes: ["choc léger, aucune plaie, aucune perte de connaissance"]
+
+  # ----------------------------------------------------------------------------- DIVERS
+  - motif: "Hypothermie"
+    plaintes: ["personne retrouvée au sol, froide"]
+    patient: [{tiers: "On a retrouvé mon voisin par terre chez lui, il est glacé."}]
+    question: "Depuis combien de temps était-il au sol ?"
+    age: [70, 95]
+    sexe: M
+    niveaux:
+      "1":
+        - signes: ["retrouvé au sol depuis la nuit, froid au toucher"]
+          constantes: {temperature: [29.5, 32.0]}
+      "2":
+        - signes: ["retrouvé au sol depuis quelques heures"]
+          constantes: {temperature: [32.5, 35.2]}
+
+  - motif: "Hyperglycémie"
+    plaintes: ["glycémie très élevée"]
+    patient: ["Mon lecteur affiche une glycémie très haute."]
+    question: "Avez-vous recherché des cétones et vous sentez-vous somnolent{e} ?"
+    age: [16, 75]
+    antecedents: ["diabète de type 1", "diabète de type 2 sous insuline"]
+    niveaux:
+      "2":
+        - signes: ["cétonémie élevée, polypnée, somnolence"]
+          constantes: {glycemia: [25.0, 35.0], gcs: [13, 13]}
+      "3B":
+        - signes: ["glycémie élevée, cétose positive"]
+          constantes: {glycemia: [20.0, 28.0]}
+      "4":
+        - signes: ["cétose négative, aucun symptôme"]
+          constantes: {glycemia: [14.0, 19.5]}
+
+  - motif: "Hypoglycémie"
+    plaintes: ["hypoglycémie"]
+    patient: [{tiers: "Mon mari diabétique est en sueur et ne répond pas bien."}]
+    question: "Est-il conscient et peut-il avaler du sucre ?"
+    age: [20, 85]
+    sexe: M
+    antecedents: ["diabète de type 1", "diabète de type 2 sous insuline"]
+    niveaux:
+      "1":
+        - signes: ["inconscient, sueurs profuses"]
+          constantes: {gcs: [5, 8], glycemia: [1.2, 2.2]}
+      "2":
+        - signes: ["confus, sueurs"]
+          constantes: {gcs: [11, 13], glycemia: [1.8, 2.8]}
+      defaut:
+        - signes: ["hypoglycémie resucrée par le patient, conscient et cohérent"]
+          constantes: {gcs: [15, 15], glycemia: [3.5, 5.0]}
+
+  - motif: "Allergie"
+    plaintes: ["réaction allergique"]
+    patient: ["J'ai mangé des cacahuètes et ma gorge me gratte."]
+    question: "Avez-vous du mal à respirer ou à avaler ?"
+    age: [10, 70]
+    niveaux:
+      "2":
+        - signes: ["gêne respiratoire et sensation de gorge serrée"]
+      defaut:
+        - signes: ["prurit buccal isolé, pas de gêne respiratoire"]
+
+  - motif: "Renouvellement ordonnance"
+    plaintes: ["renouvellement d'ordonnance"]
+    patient: ["Je n'ai plus de médicaments et mon médecin est en vacances."]
+    question: "Avez-vous un symptôme particulier aujourd'hui ?"
+    age: [25, 85]
+    niveaux:
+      defaut:
+        - signes: ["demande de renouvellement de traitement antihypertenseur, aucun symptôme"]
+
+  - motif: "Problème suite de soins (pansements...)"
+    plaintes: ["réfection de pansement"]
+    patient: ["Je viens pour refaire mon pansement."]
+    question: "La plaie est-elle rouge, chaude ou douloureuse ?"
+    age: [18, 85]
+    niveaux:
+      defaut:
+        - signes: ["pansement de plaie suturée il y a 3 jours, aspect propre"]

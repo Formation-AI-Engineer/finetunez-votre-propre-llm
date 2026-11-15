@@ -22,24 +22,35 @@ Vue d'ensemble :
 ## À faire de votre côté
 
 Ce qui ne peut pas être fait à votre place. Le reste de la fiche est à réaliser ensemble.
+Plus rien ne bloque l'étape 1.
 
-### Pour démarrer l'étape 1
-- [ ] Exporter en PDF dans `docs/enonce/` les pages OpenClassrooms réservées aux inscrits :
-      « Organisez-vous pour ce projet », « Enjeux de l'IA générative pour un citoyen européen »,
-      « Supervised Fine-Tuning » et, si elle est disponible, la fiche d'auto-évaluation
-- [ ] Vérifier s'il existe un PDF `-2` : la numérotation passe de `-1` à `-3`
-- [ ] Créer un jeton Hugging Face et un compte Weights & Biases, puis les renseigner dans `.env`
-      (`cp .env.example .env`), jamais dans le chat ni dans Git
+### Étape 1 ✅
+- [x] Cours OpenClassrooms : lus directement sur la plateforme, pas d'export PDF nécessaire
+- [x] PDF `-2` : c'est la page de la mission, renommée
+- [x] Fiche d'auto-évaluation : il n'y en a pas pour ce projet
+- [x] Jeton Hugging Face (Write) et clé Weights & Biases renseignés dans `.env`
 
-### Pour démarrer l'étape 2
-- [ ] Choisir le GPU d'entraînement (Colab, Kaggle ou location) et fixer un budget
+### Pour l'étape 2
+- [x] GPU d'entraînement : Kaggle (gratuit), Colab en secours
+- [x] Kaggle : GPU T4 x2 (15 Gio chacun), 30 Gio de RAM, sessions de 12 h, Internet activé,
+      secret `HF_TOKEN` lu dans un notebook
+- [x] Jeton Hugging Face remplacé après son affichage en clair (nouveau jeton Write vérifié dans `.env`)
+- [x] Nouveau jeton dans le secret Kaggle `HF_TOKEN`, sortie du notebook de test effacée
+- [x] `WANDB_API_KEY` ajouté aux Kaggle Secrets
+- [x] Kaggle tourne sous Python 3.13, le projet sous 3.12 : uv installe Python 3.12 dans la session
+      (`scripts/kaggle/setup.sh`)
+- [x] Jeton GitHub *fine-grained* en lecture seule sur le dépôt, ajouté au secret Kaggle `GITHUB_TOKEN`
+      (le dépôt est privé)
+- [x] Lancer le notebook Kaggle et me transmettre la sortie de la dernière cellule
 
 ### Avec le mentor
 - [ ] Passer en revue `docs/POINT_MENTOR.md`, en commençant par les données de triage synthétiques
 - [ ] Faire valider les seuils d'acceptation et la correspondance FRENCH vers les 3 niveaux
 
 ### Pour l'étape 4
-- [ ] Choisir le fournisseur cloud de la démonstration et y ouvrir un compte
+- [x] Fournisseur de la démonstration : Modal (30 $ de crédits par mois, facturé seulement à l'usage)
+- [ ] Compte Modal, avec un plafond de dépenses s'il demande une carte bancaire
+- [ ] Jeton Hugging Face Read (ou *fine-grained* limité au dépôt du modèle) pour l'endpoint
 
 ---
 
@@ -51,8 +62,8 @@ Ce qui ne peut pas être fait à votre place. Le reste de la fiche est à réali
 - [x] CI GitHub Actions : ruff et pytest (`.github/workflows/ci.yml`)
 - [x] Hyperparamètres de départ : `configs/sft.yaml`, `configs/dpo.yaml`
 - [x] Dépôt distant GitHub configuré (`origin`)
-- [ ] Premier commit et premier envoi vers GitHub
-- [ ] Comptes et jetons : Hugging Face, Weights & Biases, fournisseur GPU
+- [x] Premier commit et premier envoi vers GitHub (`main` et `dev`)
+- [x] Comptes et jetons : Hugging Face (Write), Weights & Biases
 
 ---
 
@@ -65,7 +76,6 @@ Ce qui ne peut pas être fait à votre place. Le reste de la fiche est à réali
 - [ ] Parcourir le référentiel FRENCH de la SFMU **(ajout)**
 - [ ] Passer en revue `docs/POINT_MENTOR.md` en session de mentorat
 - [ ] Valider le périmètre de l'agent : questionnaire adaptatif, intégration au SI
-- [ ] Récupérer la fiche d'auto-évaluation à compléter avant la soutenance
 
 ---
 
@@ -74,26 +84,28 @@ Ce qui ne peut pas être fait à votre place. Le reste de la fiche est à réali
 **À la fin :** dataset anonymisé, versionné, avec schéma de métadonnées et justification RGPD.
 
 ### Inventaire et collecte
-- [ ] Inventaire des sources : origine, licence, langue, volume (`docs/DONNEES.md`)
-- [ ] Trancher la source FrenchMedMCQA et vérifier la licence de MedQuAD (voir point mentor)
-- [ ] Script de téléchargement avec révision Hub épinglée pour chaque source
-- [ ] UltraMedical : charger chaque fichier séparément (`data/train.json`, `dev.json`, `test.json`),
+- [x] Inventaire des sources : origine, licence, langue, volume (`docs/DONNEES.md`)
+- [x] Trancher la source FrenchMedMCQA (`qanastek`, Apache 2.0) et vérifier la licence de MedQuAD
+      (CC BY 4.0 dans le dépôt d'origine, utilisé à la place du miroir HF)
+- [x] Script de téléchargement avec révision épinglée pour chaque source (`scripts/download_data.py`)
+- [x] UltraMedical : charger chaque fichier séparément (`data/train.json`, `dev.json`, `test.json`),
       car `test.json` n'a pas la colonne `feedback` et casse le chargement global
 
 ### Schéma et normalisation
-- [ ] Schéma pydantic des métadonnées : symptômes, antécédents, constantes, source, langue,
+- [x] Schéma pydantic des métadonnées : symptômes, antécédents, constantes, source, langue,
       licence, niveau de confiance, identifiant d'origine
-- [ ] Format SFT conversationnel `prompt` / `completion`, format DPO `prompt` / `chosen` / `rejected`
-- [ ] Convertir les QCM (`correct_answers`) en réponses rédigées, avec la justification si disponible
-- [ ] Sortir la question de `chosen` et `rejected` dans UltraMedical (le prompt y est répété)
-- [ ] Filtrer : réponses vides ou trop longues (MedQuAD va jusqu'à ~29 000 caractères), doublons
+- [x] Format SFT conversationnel `prompt` / `completion`, format DPO `prompt` / `chosen` / `rejected`
+- [x] Convertir les QCM (`correct_answers`) en réponses rédigées (aucune source ne fournit de
+      justification)
+- [x] Sortir la question de `chosen` et `rejected` dans UltraMedical (le prompt y est répété)
+- [x] Filtrer : réponses vides ou trop longues (MedQuAD va jusqu'à ~29 000 caractères), doublons
 
 ### Jeu de triage **(ajout)**
-- [ ] Générer des vignettes FR à partir du référentiel FRENCH : motif, constantes, antécédents,
+- [x] Générer des vignettes FR à partir du référentiel FRENCH : motif, constantes, antécédents,
       niveau attendu et justification
-- [ ] Table de correspondance vers les 3 niveaux : tri 1-2 → maximale, 3A-3B → modérée,
+- [x] Table de correspondance vers les 3 niveaux : tri 1-2 → maximale, 3A-3B → modérée,
       4-5 → différée (à faire valider)
-- [ ] Marquer ces données `synthetic` et ne jamais les présenter comme validées cliniquement
+- [x] Marquer ces données `synthetic` et ne jamais les présenter comme validées cliniquement
 
 ### Composition cible (à ajuster selon la qualité observée)
 
@@ -107,23 +119,26 @@ Ce qui ne peut pas être fait à votre place. Le reste de la fiche est à réali
 | DPO | Paires de triage FR : bon niveau / sous-triage **(ajout)** | ~300 | FR |
 
 ### Anonymisation et RGPD
-- [ ] Moteurs Presidio FR (`fr_core_news_md`) et EN (`en_core_web_md`), entités personne, dates,
+- [x] Moteurs Presidio FR (`fr_core_news_md`) et EN (`en_core_web_md`), entités personne, dates,
       téléphones, adresses
-- [ ] Liste d'exclusion des éponymes : testé ici, Presidio masque « Parkinson » et
+- [x] Liste d'exclusion des éponymes : testé ici, Presidio masque « Parkinson » et
       « Guillain-Barré » comme des personnes
-- [ ] Comparer les stratégies `replace`, `mask`, `redact` et justifier le choix
-- [ ] Priorité sur UltraMedical : sa partie ChatDoctor contient de vrais messages de patients
-- [ ] Contrôle qualité : échantillon relu à la main, faux négatifs et faux positifs mesurés
-- [ ] Rédiger la justification RGPD : base légale, minimisation, traçabilité (`docs/RGPD.md`)
+- [x] Comparer les stratégies `replace`, `mask`, `redact` et justifier le choix (`replace`)
+- [x] Priorité sur UltraMedical : sa partie ChatDoctor contient de vrais messages de patients
+- [x] Contrôle qualité : faux négatifs et faux positifs mesurés sur un corpus annoté
+- [x] Relire les entités détectées sur des échantillons réels (ChatDoctor, MediQAl, MedQuAD) :
+      précision et rappel d'environ 80 % sur les noms, limite documentée dans `docs/RGPD.md`
+- [x] Rédiger la justification RGPD : base légale, minimisation, traçabilité (`docs/RGPD.md`)
 
 ### Découpage et publication
-- [ ] Train / val / test sans fuite : garder les tests officiels, dédoublonner **entre** sources
+- [x] Train / val / test sans fuite : garder les tests officiels, dédoublonner **entre** sources
       (UltraMedical reprend MedQuAD et d'autres corpus)
-- [ ] Jeux d'évaluation séparés : connaissances FR, préférence EN (777 exemples de test, dont 163
+- [x] Jeux d'évaluation séparés : connaissances FR, préférence EN (777 exemples de test, dont 163
       annotés par des humains), triage et sécurité (~200 vignettes jamais vues)
-- [ ] Journal de chaque transformation : entrée, sortie, comptages, empreinte
-- [ ] Carte du dataset et dépôt Hugging Face en privé (publication à décider ensuite)
-- [ ] Tests pytest : schéma, absence de fuite entre jeux, anonymisation
+- [x] Journal de chaque transformation : entrée, sortie, comptages, empreinte
+- [x] Carte du dataset (`scripts/dataset_card.md`) et script de dépôt privé (`scripts/publish_dataset.py`)
+- [x] Déposer le dataset sur Hugging Face en privé : `lcamara/triage-chsa` (publication à décider ensuite)
+- [x] Tests pytest : schéma, règles, vignettes, absence de fuite entre jeux, anonymisation
 
 ---
 
@@ -132,31 +147,67 @@ Ce qui ne peut pas être fait à votre place. Le reste de la fiche est à réali
 **À la fin :** adaptateur SFT reproductible, métriques documentées, comparaison avec le modèle de base.
 
 ### Préparation
-- [ ] Définir les métriques cliniques et les seuils d'acceptation (propositions ci-dessous)
-- [ ] Louer ou activer un GPU (pas de GPU sur le poste local) et installer `uv sync --extra train`
-- [ ] Mesure de référence : évaluer Qwen3-1.7B-Base **avant** tout entraînement
-- [ ] Choisir et documenter le mode sans raisonnement (`enable_thinking=False`)
+- [x] Définir les métriques cliniques et les seuils d'acceptation (propositions ci-dessous) :
+      `docs/EVALUATION.md`, calcul dans `src/triage/metrics.py`
+- [x] Notebook Kaggle fixe (`notebooks/kaggle.ipynb`, importé une seule fois) : chaque étape est un
+      script `scripts/kaggle/<étape>.sh`, choisi par la variable `STEP` de la dernière cellule
+- [x] Activer le GPU Kaggle (pas de GPU sur le poste local) et installer `uv sync --extra train` :
+      `notebooks/kaggle.ipynb` ; vérifié le 10/11/2026 : 2 × Tesla T4 (14,6 Gio, capacité 7.5),
+      pilote 580.178.04, torch 2.14.1+cu126, Python 3.12.3. Pas de bf16 : entraîner en **fp16**
+- [x] Mesure de référence : évaluer Qwen3-1.7B-Base **avant** tout entraînement :
+      `scripts/evaluate.py` (zero-shot et few-shot), étape Kaggle `baseline` ; résultats du
+      11/11/2026 (commit `108a9c3`, dataset `7dffce7`) dans `docs/EVALUATION.md`
+- [x] Choisir et documenter le mode sans raisonnement (`enable_thinking=False`) : même rendu à
+      l'entraînement (`chat_template_kwargs`, `src/triage/training.py`) et à l'évaluation ; le
+      prompt finit par un bloc `<think></think>` vide, préfixe exact de prompt + réponse (vérifié)
 
 ### Entraînement
-- [ ] Script SFT : Transformers + PEFT + TRL, configuré par `configs/sft.yaml`
-- [ ] Petit run (~100 exemples) : la perte doit chuter jusqu'au sur-apprentissage volontaire
-- [ ] Vérifier le rendu du chat template et le jeton de fin (`<|im_end|>`)
-- [ ] Run complet avec suivi W&B : perte train / val, mémoire GPU, durée
-- [ ] Faire varier `r`, le taux d'apprentissage et le nombre d'époques ; garder une trace de chaque essai
-- [ ] Checkpoints, reprise testée, graine, hyperparamètres et révision du dataset enregistrés
+- [x] Script SFT : Transformers + PEFT + TRL, configuré par `configs/sft.yaml` :
+      `scripts/train_sft.py` (surcharges `--set`, `--limit`, `--resume`). Avec des lignes de jetons
+      entraînées, la perte passe par la sortie complète du modèle (`FullLogitsSFTTrainer`) : le
+      calcul fusionné de TRL contournait l'enveloppe PEFT de `lm_head`
+- [x] Petit run (~100 exemples) : la perte doit chuter jusqu'au sur-apprentissage volontaire
+      (étape Kaggle `sft_smoke`, cuda:0) : 1,718 → 0,020 en 195 pas (11/11/2026)
+- [x] Vérifier le rendu du chat template et le jeton de fin (`<|im_end|>`) : contrôle intégré à
+      `train_sft.py` (l'entraînement s'arrête s'il échoue), puis génération avec l'adaptateur.
+      Smoke test du 11/11/2026 : rendu correct, mais 40/40 réponses sans fin. Dans Qwen3-Base,
+      `<|im_start|>`, `<|im_end|>`, `<think>` et `</think>` ont la même ligne d'embeddings, jamais
+      entraînée (table partagée avec la sortie) : ces 4 lignes sont désormais entraînées
+      (`lora.trainable_tokens`). Revérifié avec `sft_smoke` : 0/40 réponses coupées
+- [x] Run complet avec suivi W&B : perte train / val, mémoire GPU, durée (étape Kaggle `sft`,
+      12/11/2026) : 1 899 pas en 2 h 18, 11,3 Gio
+- [x] Faire varier `r`, le taux d'apprentissage et le nombre d'époques ; garder une trace de chaque essai.
+      Taux d'apprentissage : 2e-4 et 1e-4 comparés (`docs/EVALUATION.md`) ; `r` et époques non
+      variés, par choix (plateau de la perte, budget GPU : `docs/DECISIONS.md`, point 4)
+- [x] Checkpoints, reprise testée, graine, hyperparamètres et révision du dataset enregistrés
+      (`outputs/sft/<nom>/run.json` ; reprise après interruption : `sft_smoke`, cuda:1, repris du
+      pas 20 et fini au pas 40)
 
 ### Validation intermédiaire
-- [ ] Évaluation automatique : exactitude sur les QCM, niveau de triage sur les vignettes
-- [ ] Contrôles de sécurité : hallucinations, recommandations dangereuses
-- [ ] Surveiller le sur-apprentissage et la perte de connaissances générales
-- [ ] Sélectionner l'adaptateur retenu, avec justification chiffrée
+- [x] Évaluation automatique : exactitude sur les QCM, niveau de triage sur les vignettes
+      (`docs/EVALUATION.md`, « Après le SFT ») : triage 94,7 %, sous-triage des cas maximale 10,6 %
+      (seuil 5 % non atteint), QCM 35-48 %
+- [x] Contrôles de sécurité : hallucinations, recommandations dangereuses. Jeu de sécurité de 40
+      cas rédigés à la main (`configs/safety_cases.yaml`, `src/triage/safety.py`, `docs/EVALUATION.md`).
+      Résultats du 13/11 : 11/40 réponses dangereuses pour SFT + DPO avec les règles (seuil 0),
+      toutes des sous-triages de cas maximale formulés hors des gabarits ; aucun conseil de
+      posologie ni de renvoi à domicile. Garde-fou de cohérence entre le critère cité et le
+      niveau (`src/triage/consistency.py`, `scripts/guard_report.py`) : 11 → 9/40 pour le DPO,
+      13 → 12/40 pour le SFT ; en validation, SFT + constantes + cohérence : 0/66 maximale
+      manqués avec 0,7 % de sur-triage. Pistes restantes : drapeaux rouges sur le texte du
+      patient dans l'API (à mesurer sur des cas neufs), vignettes plus variées
+- [x] Surveiller le sur-apprentissage et la perte de connaissances générales : perte de
+      validation en plateau sans remontée, QCM en hausse
+- [x] Sélectionner l'adaptateur retenu, avec justification chiffrée : `sft-r16-lr2e-4`
+      (`configs/dpo.yaml`)
 
-### Seuils proposés (à valider avec le mentor)
+### Seuils retenus (`docs/DECISIONS.md`)
 
 | Métrique | Seuil |
 |---|---|
 | Sous-triage des cas de priorité maximale | ≤ 5 % |
 | Exactitude à 3 niveaux sur les vignettes | ≥ 75 % |
+| Sur-triage (toutes vignettes) | ≤ 20 % |
 | Recommandation dangereuse sur le jeu de sécurité | 0 |
 | Latence p95 d'une réponse | ≤ 3 s |
 
@@ -166,14 +217,40 @@ Ce qui ne peut pas être fait à votre place. Le reste de la fiche est à réali
 
 **À la fin :** modèle aligné, gain mesuré par rapport au SFT seul, poids finaux disponibles.
 
-- [ ] Script DPO : reprise de l'adaptateur SFT avec `is_trainable=True`, `configs/dpo.yaml`
-- [ ] Petit run : `rewards/accuracies` doit monter et `rewards/margins` s'écarter de 0
-- [ ] Faire varier `beta` et le taux d'apprentissage ; surveiller `logps/chosen`
-- [ ] Contrôler le biais de longueur (catégorie `length` d'UltraMedical, `loss_type="sigmoid_norm"`)
-- [ ] Comparer base / SFT / SFT + DPO sur les mêmes jeux, sécurité comprise
-- [ ] Comparaison par préférence : net win rate, juge LLM avec grille
-- [ ] Vérifier que le français n'a pas régressé (paires DPO majoritairement en anglais)
-- [ ] Fusionner l'adaptateur et publier les poids finaux (`merge_and_unload`)
+- [x] Script DPO : `scripts/train_dpo.py`, configuré par `configs/dpo.yaml`, validé sur Kaggle
+      (étape `dpo_smoke`, puis étape `dpo`). L'adaptateur SFT n'est pas repris avec `is_trainable=True` : il est
+      **fusionné** dans le modèle (contrôle : mêmes prédictions avant et après), puis un nouvel
+      adaptateur LoRA est entraîné. La référence du DPO est ainsi le modèle SFT, avec ses lignes
+      de jetons : TRL les aurait perdues dans sa copie de référence et dans sa perte fusionnée
+- [x] Publier l'adaptateur SFT retenu en privé sur le Hub (`scripts/publish_adapter.py`) : Kaggle
+      le télécharge à une révision fixe (`sft_adapter` dans `configs/dpo.yaml`) ;
+      `lcamara/triage-chsa-adapters`, révision `8f0cbc4` (12/11/2026, fichiers vérifiés)
+- [x] Petit run : `rewards/accuracies` doit monter et `rewards/margins` s'écarter de 0
+      (étape Kaggle `dpo_smoke`, avec test de reprise) : 0,44 → 1,00 et 0,03 → 8,4 ; reprise OK
+- [x] Faire varier `beta` et le taux d'apprentissage ; surveiller `logps/chosen` : lr 1e-5, 2e-5
+      et 3e-5 comparés (`docs/EVALUATION.md`), `logps/chosen` stable ; `beta` non varié, par
+      choix (`docs/DECISIONS.md`, point 4)
+- [x] Contrôler le biais de longueur (catégorie `length` d'UltraMedical, `loss_type="sigmoid_norm"`) :
+      pas de biais (triage 587 → 581 caractères, QCM 109 → 113), `sigmoid_norm` inutile
+- [x] Comparer base / SFT / SFT + DPO sur les mêmes jeux, sécurité comprise : validation, jeu
+      de sécurité et jeu de test (SFT et SFT + DPO), avec et sans garde-fous.
+      Adaptateur retenu : `dpo-b0.1-lr3e-5` (0/66 cas maximale manqués avec les règles,
+      10 % de sur-triage ; `docs/DECISIONS.md`). Jeu de test : étape Kaggle `final`
+- [x] Adaptateur DPO proposé publié en privé : `hf://lcamara/triage-chsa-adapters/dpo-b0.1-lr3e-5`,
+      révision `eb4703b` (13/11/2026, fichiers vérifiés) ; à empiler après l'adaptateur SFT
+      (`evaluate.py --adapter <sft> --adapter <dpo>`)
+- [x] Comparaison par préférence : taux de victoire déterministe DPO contre SFT en validation,
+      −5,3 % net (6 victoires, 14 défaites) ; pas de juge LLM, par choix (données privées,
+      `docs/DECISIONS.md`, point 6)
+- [x] Vérifier que le français n'a pas régressé (paires DPO majoritairement en anglais) : QCM
+      français stables (48,0 % et 34-35 %), format intact
+- [x] Fusionner l'adaptateur et publier les poids finaux (`merge_and_unload`) :
+      `scripts/merge_final.py` (fusion fp32, contrôle contre les adaptateurs empilés) et
+      `scripts/publish_model.py` (dépôt privé), étape Kaggle `final` : 99,83 % de jetons
+      identiques ; `lcamara/triage-chsa-qwen3-1.7b@97e8679` (13/11/2026)
+- [x] Évaluation unique sur le jeu de test (`docs/EVALUATION.md`) : système décidé 1/84 cas
+      maximale manqués (1,2 %), exactitude 86,5 %, sur-triage 12 %, les trois seuils atteints ;
+      avec les drapeaux rouges 0/84 (borne haute 4,4 %) et 14,5 % de sur-triage
 - [ ] GRPO : facultatif, à ne traiter que s'il reste du temps
 
 ---
@@ -183,30 +260,68 @@ Ce qui ne peut pas être fait à votre place. Le reste de la fiche est à réali
 **À la fin :** endpoint accessible, déploiement automatisé, tests de latence et d'audit réalisés.
 
 ### Service
-- [ ] Choisir le fournisseur GPU et noter le coût
-- [ ] Conteneur vLLM (`vllm serve`, modèle fusionné) et test de l'API au format OpenAI
-- [ ] FastAPI : `POST /api/v1/triage`, session de questionnaire adaptatif, authentification par clé
-- [ ] Règles de sécurité déterministes : les drapeaux rouges FRENCH (ex. SpO2 < 86 %) forcent la
-      priorité maximale, quel que soit le modèle **(ajout)**
-- [ ] Réponse structurée : niveau, explication, questions restantes, avertissement « aide à la décision »
+- [x] Choisir le fournisseur GPU et noter le coût : Modal, L4 (≈ 0,80 $/h) avec A10G en secours
+      (≈ 1,10 $/h), facturé à la seconde, éteint après 5 min ; 30 $ de crédits par mois,
+      plafond de dépenses à 0 $. A10 servi le 15/11 (aucun L4 libre)
+- [x] Conteneur vLLM (`vllm serve`, modèle fusionné) et test de l'API au format OpenAI :
+      `deploy/modal_app.py` (vLLM 0.32.0 sur L4, A10G en secours, révision du modèle fixée,
+      arrêt après 5 min d'inactivité) et `docker-compose.yml`. Déployé sur Modal le 15/11/2026,
+      test de bout en bout réussi (questionnaire 3 tours, douleur thoracique → MAXIMALE 2, 401
+      sans clé, relais IOA pendant un redémarrage de vLLM, audit 401 avec la clé d'API).
+      **Correctif** : le tokenizer hérite de la fin de séquence du modèle de base
+      (<|endoftext|>) ; sans `stop_token_ids` sur <|im_end|>, vLLM générait jusqu'à 320 jetons
+      (répétitions, 3 s fixes). Limite observée : justifications parfois peu fluides
+      (mots inventés), niveaux corrects
+- [x] FastAPI : `POST /api/v1/triage`, session de questionnaire adaptatif, authentification par clé
+      (`src/triage/api/main.py`, `src/triage/service.py`, client vLLM `src/triage/llm.py`) ;
+      8 échanges au plus par session, puis relais à l'IOA ; sessions en mémoire (1 h)
+- [~] Règles de sécurité déterministes : les drapeaux rouges FRENCH (ex. SpO2 < 86 %) forcent la
+      priorité maximale, quel que soit le modèle, puis le niveau du critère FRENCH cité sert de
+      plancher (`src/triage/rules.py`, `src/triage/consistency.py`) **(ajout)** : branchées dans
+      le service, alerte sur les constantes même pendant une question ou si le modèle est
+      indisponible. Drapeaux rouges sur le texte (`src/triage/red_flags.py`, 24 critères FRENCH
+      de tri 1-2) : premier jeu 9 → 2/40 pour le DPO (optimiste) ; second jeu de 29 cas neufs
+      (`configs/safety_cases_v2.yaml`, commité avant les règles) : 8 → 1/29 pour le DPO,
+      13 → 1/29 pour le SFT, aucune fausse alerte ; effet de la pression isolé : 1 paire sur 5
+- [x] Réponse structurée : statut (question, évaluation, relais IOA), niveau du modèle et niveau
+      final, garde-fous déclenchés et leur raison, alertes, avertissement « aide à la décision »
 - [ ] Page de démonstration minimale pour la soutenance
-- [ ] `Dockerfile`, `docker-compose.yml`, versions épinglées, sondes de santé
+- [x] `Dockerfile`, `docker-compose.yml`, versions épinglées, sondes de santé : image de l'API
+      construite et testée localement (healthcheck, relais IOA sans vLLM, journal d'audit) ;
+      `GET /api/v1/readiness` vérifie vLLM
 
 ### Traçabilité
-- [ ] Journal d'audit : horodatage, version du modèle, prompt, réponse, niveau, latence, sans
-      donnée directement identifiante
-- [ ] Route de consultation d'audit protégée et test d'audit de bout en bout
+- [x] Journal d'audit : horodatage, version du modèle, prompt, réponse, niveau, latence, sans
+      donnée directement identifiante (`src/triage/audit.py` : masquage par expressions
+      régulières des noms après une formule, téléphones, courriels, NIR, dates ; limite écrite)
+- [~] Route de consultation d'audit protégée et test d'audit de bout en bout : `GET /api/v1/audit`
+      (clé distincte), testée avec un modèle simulé ; reste le test avec vLLM
 
 ### CI/CD
 - [ ] Workflow de test étendu : données de test, API avec vLLM simulé
-- [ ] Construction et publication de l'image, déploiement automatique sur `main`
-- [ ] Déploiement d'une nouvelle version du modèle par simple changement de révision
-- [ ] Secrets dans GitHub Actions uniquement, clés jamais dans le dépôt
+- [~] Construction et publication de l'image, déploiement automatique sur `main`
+      (`.github/workflows/ci.yml`) : qualité → image de l'API construite et testée sans vLLM
+      (healthcheck, 401, relais IOA avec plancher des constantes, clés d'audit séparées) →
+      publication GHCR et `modal deploy` sur `main`. Test de fumée vérifié en local ; à valider
+      au premier passage sur GitHub
+- [x] Déploiement d'une nouvelle version du modèle par simple changement de révision : lancement
+      manuel du workflow avec `model_revision` (40 caractères hexadécimaux, contrôlés)
+- [~] Secrets dans GitHub Actions uniquement, clés jamais dans le dépôt : `MODAL_TOKEN_ID` et
+      `MODAL_TOKEN_SECRET` à créer (jeton Modal dédié à la CI) ; clés de l'API et jeton HF dans
+      les secrets Modal, clés locales dans `~/.config/triage-chsa/api.env` (hors dépôt)
 
 ### Tests
-- [ ] Charge (locust ou équivalent) : latence p50 / p95, débit, temps au premier jeton, mémoire GPU
-- [ ] Robustesse : entrées vides ou très longues, injection de prompt, anglais, vLLM indisponible
-- [ ] Comparer vLLM et Transformers seul pour justifier le choix
+- [x] Charge (`scripts/load_test.py`, 15/11/2026, A10) : p95 serveur 1,80 s (1 requête) à
+      2,03 s (16 simultanées), débit 0,73 → 8,65 req/s, premier jeton p95 143 ms, mémoire GPU
+      20,0 / 23,0 Go (cache KV). Seuil 3 s tenu ; commit d'audit bloquant trouvé et corrigé
+- [x] Robustesse (`scripts/robustness_test.py`, 20 cas sur le déploiement) : 18 / 20 puis
+      20 / 20 après corrections. Trouvés : message non réécrit quand un garde-fou relève le
+      niveau (injection obéie par le modèle), anglais non maîtrisé (« 911 »), fuite du prompt
+      système. Corrigés : message réécrit, anglais → relais IOA, fuite filtrée, drapeau rouge
+      signalé pendant une question
+- [x] Comparer vLLM et Transformers seul (`deploy/bench_engines.py`, A10, 15/11/2026) : p95
+      1,93 s contre 4,91 s pour une requête, 2,37 s contre 6,24 s à 16 ; débit 8,85 contre
+      2,51 req/s ; niveaux identiques 60/60. Décision : vLLM
 - [ ] Limites d'usage, surveillance après déploiement, checklist go / no-go
 
 ---
@@ -225,7 +340,6 @@ Ce qui ne peut pas être fait à votre place. Le reste de la fiche est à réali
 ### Dépôt
 - [ ] Livrables nommés `Nom_Prenom_n°_nom_mmaaaa` (mois de démarrage, 102026 si le projet démarre
       en octobre 2026), dans une archive `Titre_du_projet_nom_prenom.zip`
-- [ ] Fiche d'auto-évaluation complétée
 
 | N° | Livrable | Forme |
 |---|---|---|

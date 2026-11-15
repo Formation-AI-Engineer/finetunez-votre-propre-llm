@@ -1,16 +1,35 @@
 # Point de départ à ajuster après les petits runs de validation (étape 2).
 model_id: Qwen/Qwen3-1.7B-Base
 seed: 42
+# Dataset privé sur le Hub, à une révision fixe (contenu vérifié contre data/processed/build_log.json).
+dataset:
+  repo_id: lcamara/triage-chsa
+  revision: 7dffce7d0494094a0197f67a3085d8823fdb6d9f
 lora:
   r: 16
   lora_alpha: 32
   lora_dropout: 0.05
   target_modules: [q_proj, k_proj, v_proj, o_proj]
+  # Jetons du chat template jamais entraînés dans Qwen3-Base : leurs lignes de la table
+  # d'embeddings (partagée avec la sortie) sont identiques, si bien que le modèle ne peut pas
+  # distinguer <|im_end|> de <|im_start|> ou </think>, et ne s'arrête pas (smoke test du
+  # 11/11/2026 : 40/40 réponses coupées). Ces lignes seules sont entraînées, en plus de LoRA.
+  trainable_tokens: ["<|im_start|>", "<|im_end|>", "<think>", "</think>"]
+# Clés de `training` : arguments de trl.SFTConfig, passés tels quels (scripts/train_sft.py).
+# Environ 5 060 exemples / lot de 8 = 633 pas par époque, 1 900 pour 3 époques.
 training:
   learning_rate: 2.0e-4
+  lr_scheduler_type: cosine
+  warmup_steps: 0.05            # fraction du nombre total de pas (transformers 5)
   num_train_epochs: 3
-  per_device_train_batch_size: 8
-  max_length: 1024
+  # Lot effectif de 8 : 4 par pas × 2 pas accumulés. La perte passe par la sortie complète du
+  # modèle (lora.trainable_tokens), environ 2,5 Gio par lot de 4 séquences de 1 024 jetons.
+  per_device_train_batch_size: 4
+  gradient_accumulation_steps: 2
+  per_device_eval_batch_size: 4
+  max_length: 1024              # exemples plus longs retirés, jamais tronqués
+  logging_steps: 10
   eval_strategy: steps
+  eval_steps: 100               # perte de validation toutes les 100 étapes, checkpoint au même rythme
   save_total_limit: 3
-  load_best_model_at_end: true
+  load_best_model_at_end: true  # adaptateur retenu : perte de validation la plus basse

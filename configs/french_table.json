@@ -1,0 +1,1119 @@
+{
+ "source": "Référentiel FRENCH, SFMU, V1.1 juin 2018 (fichier « V1.2 »)",
+ "pdf_sha256": "2212e100f5c258d0b3b432c7a540b6f428cbae3c4a3c995cb2b5a555d9544959",
+ "motifs": [
+  {
+   "category": "CARDIO-CIRCULATOIRE",
+   "name": "Arrêt cardiorespiratoire",
+   "default_level": "1",
+   "criteria": {},
+   "page": 1
+  },
+  {
+   "category": "CARDIO-CIRCULATOIRE",
+   "name": "Hypotension artérielle",
+   "default_level": "2",
+   "criteria": {
+    "1": "PAS ≤ 70 mmHg",
+    "2": "PAS ≤ 90 mmHg ou PAS ≤ 100 mmHg et FC > 100/min",
+    "3B": "PAS 90 - 100 mmHg et FC ≤ 100/min"
+   },
+   "page": 1
+  },
+  {
+   "category": "CARDIO-CIRCULATOIRE",
+   "name": "Membre douloureux/ froid ou pâle/ischémie*",
+   "default_level": "2",
+   "criteria": {
+    "2": "durée ≤ 24 h ou cyanose/déficit moteur",
+    "3B": "durée ≥ 24 h"
+   },
+   "page": 1
+  },
+  {
+   "category": "CARDIO-CIRCULATOIRE",
+   "name": "Douleur thoracique/ syndrome coronaire aigu (SCA)*",
+   "default_level": "3B",
+   "criteria": {
+    "1": "ECG anormal: typique de SCA",
+    "2": "ECG anormal: non typique de SCA, douleur typique persistante/intense",
+    "3A": "ECG normal, comorbidité coronaire (antécédents, facteurs de risque)",
+    "3B": "ECG normal, mais douleur de type coronaire",
+    "4": "ECG normal et douleur atypique"
+   },
+   "page": 1
+  },
+  {
+   "category": "CARDIO-CIRCULATOIRE",
+   "name": "Malaise",
+   "default_level": "3B",
+   "criteria": {
+    "3B": "Pas d'anomalie notable des paramètres vitaux et glycémie"
+   },
+   "page": 1
+  },
+  {
+   "category": "CARDIO-CIRCULATOIRE",
+   "name": "Tachycardie/tachyarythmie",
+   "default_level": "3B",
+   "criteria": {
+    "1": "FC ≥ 180 /min",
+    "2": "FC ≥ 130/min",
+    "3B": "FC > 110/min",
+    "4": "épisode résolutif"
+   },
+   "page": 1
+  },
+  {
+   "category": "CARDIO-CIRCULATOIRE",
+   "name": "Bradycardie/bradyarythmie",
+   "default_level": "3B",
+   "criteria": {
+    "1": "FC ≤ 40/min",
+    "2": "FC 40-50/min avec mauvaise tolérance",
+    "3B": "FC 40-50/min sans mauvaise tolérance"
+   },
+   "page": 1
+  },
+  {
+   "category": "CARDIO-CIRCULATOIRE",
+   "name": "Dyspnée/insuffisance cardiaque*",
+   "default_level": "3B",
+   "criteria": {
+    "1": "détresse respiratoire ou FR ≥ 40/min ou SpO2 < 86%",
+    "2": "dyspnée à la parole/tirage/orthopnée ou FR 30-40 /min ou SpO2 86-90%"
+   },
+   "page": 1
+  },
+  {
+   "category": "CARDIO-CIRCULATOIRE",
+   "name": "Dysfonction stimulateur/ défibrillateur cardiaque",
+   "default_level": "3B",
+   "criteria": {
+    "2": "Choc(s) électrique(s) ressenti(s)",
+    "3B": "avis référent (MAO, MCO)"
+   },
+   "page": 1
+  },
+  {
+   "category": "CARDIO-CIRCULATOIRE",
+   "name": "Œdème des membres inférieurs/ insuffisance cardiaque*",
+   "default_level": "3B",
+   "criteria": {
+    "3B": "FR <30 /min SpO2 >90%",
+    "4": "OMI chronique"
+   },
+   "page": 1
+  },
+  {
+   "category": "CARDIO-CIRCULATOIRE",
+   "name": "Palpitations",
+   "default_level": "4",
+   "criteria": {
+    "1": "FC ≥ 180/min",
+    "2": "FC ≥ 130/min",
+    "3B": "malaise ou FC > 110/min"
+   },
+   "page": 1
+  },
+  {
+   "category": "CARDIO-CIRCULATOIRE",
+   "name": "Hypertension artérielle",
+   "default_level": "4",
+   "criteria": {
+    "2": "PAS IOA ≥ 220 mmHg ou ≥ 180 mmHg et SF associés",
+    "3B": "PAS IOA ≥ 180 mmHg sans SF associés",
+    "4": "PAS <180 mmHg"
+   },
+   "page": 1
+  },
+  {
+   "category": "CARDIO-CIRCULATOIRE",
+   "name": "Membre douloureux/ chaud ou rouge/phlébite*",
+   "default_level": "4",
+   "criteria": {
+    "3B": "signes locaux francs ou siège proximal sur échographie",
+    "4": "signes locaux modérés ou siège distal sur échographie"
+   },
+   "page": 1
+  },
+  {
+   "category": "INFECTIOLOGIE",
+   "name": "AES et/ou liquide biologique",
+   "default_level": "4",
+   "criteria": {
+    "2": "sujet contact VIH avéré et exposition ≤ 48 heures",
+    "5": "exposition ≥ 48 h"
+   },
+   "page": 1
+  },
+  {
+   "category": "INFECTIOLOGIE",
+   "name": "Fièvre",
+   "default_level": "5",
+   "criteria": {
+    "2": "T° ≥ 40° C ou ≤ 35,2° C ou confusion/céphalée/purpura",
+    "3B": "mauvaise tolérance, hypotension ou shock index ≥1"
+   },
+   "page": 1
+  },
+  {
+   "category": "INFECTIOLOGIE",
+   "name": "Exposition à une maladie contagieuse",
+   "default_level": "5",
+   "criteria": {
+    "3B": "avec risque vital de contage (méningite, Ebola...)",
+    "5": "sans risque vital de contage (rougeole, varicelle…)"
+   },
+   "page": 1
+  },
+  {
+   "category": "ABDOMINAL",
+   "name": "Vomissement de sang/ hématémèse",
+   "default_level": "2",
+   "criteria": {
+    "2": "hématémèse abondante",
+    "3B": "vomissement(s) strié(s) de sang"
+   },
+   "page": 2
+  },
+  {
+   "category": "ABDOMINAL",
+   "name": "Maelena/rectorragies",
+   "default_level": "2",
+   "criteria": {
+    "2": "rectorragie abondante",
+    "3B": "selles souillées de sang"
+   },
+   "page": 2
+  },
+  {
+   "category": "ABDOMINAL",
+   "name": "Douleur abdominale",
+   "default_level": "3B",
+   "criteria": {
+    "2": "douleur sévère et/ou mauvaise tolérance",
+    "5": "douleur régresssive / indolore"
+   },
+   "page": 2
+  },
+  {
+   "category": "ABDOMINAL",
+   "name": "Ictère",
+   "default_level": "3B",
+   "criteria": {},
+   "page": 2
+  },
+  {
+   "category": "ABDOMINAL",
+   "name": "Problème technique (stomie, cicatrices post op…)",
+   "default_level": "3B",
+   "criteria": {
+    "3B": "avis référent (MAO, MCO)"
+   },
+   "page": 2
+  },
+  {
+   "category": "ABDOMINAL",
+   "name": "Hernie, masse ou distension abdominale",
+   "default_level": "4",
+   "criteria": {
+    "2": "douleur sévère et/ou symptômes d'occlusion"
+   },
+   "page": 2
+  },
+  {
+   "category": "ABDOMINAL",
+   "name": "Corps étranger dans œsophage/ estomac/intestins",
+   "default_level": "4",
+   "criteria": {
+    "2": "aphagie ou hypersialorrhée et/ou autres SF associés",
+    "3B": "tranchant, pointu"
+   },
+   "page": 2
+  },
+  {
+   "category": "ABDOMINAL",
+   "name": "Corps étranger dans le rectum",
+   "default_level": "4",
+   "criteria": {
+    "2": "douleur sévère et/ou rectorragie"
+   },
+   "page": 2
+  },
+  {
+   "category": "ABDOMINAL",
+   "name": "Constipation",
+   "default_level": "5",
+   "criteria": {
+    "2": "symptômes d'occlusion (douleur, vomissements, arrêt transit)",
+    "3B": "douleur abdominale"
+   },
+   "page": 2
+  },
+  {
+   "category": "ABDOMINAL",
+   "name": "Vomissements",
+   "default_level": "5",
+   "criteria": {
+    "2": "symptômes d'occlusion (douleur, vomissements, arrêt transit)",
+    "3A": "enfant ≤ 2 ans",
+    "3B": "douleur abdominale ou vomissements abondants"
+   },
+   "page": 2
+  },
+  {
+   "category": "ABDOMINAL",
+   "name": "Diarrhée",
+   "default_level": "5",
+   "criteria": {
+    "3A": "enfant ≤ 2 ans",
+    "3B": "abondantes et/ou mauvaise tolérance"
+   },
+   "page": 2
+  },
+  {
+   "category": "ABDOMINAL",
+   "name": "Douleur anale",
+   "default_level": "5",
+   "criteria": {
+    "3B": "suspiçion abces/fissure"
+   },
+   "page": 2
+  },
+  {
+   "category": "ABDOMINAL",
+   "name": "Hoquet",
+   "default_level": "5",
+   "criteria": {
+    "3B": "hoquet incessant (≥ 12 h)"
+   },
+   "page": 2
+  },
+  {
+   "category": "GENITO-URINAIRE",
+   "name": "Douleur de la fosse lombaire/du flanc",
+   "default_level": "3B",
+   "criteria": {
+    "2": "douleur intense",
+    "5": "douleur régressive/ indolore"
+   },
+   "page": 2
+  },
+  {
+   "category": "GENITO-URINAIRE",
+   "name": "Rétention d'urine/anurie",
+   "default_level": "3B",
+   "criteria": {
+    "2": "douleur intense/agitation"
+   },
+   "page": 2
+  },
+  {
+   "category": "GENITO-URINAIRE",
+   "name": "Douleur de bourse/ orchite*/torsion testicule*",
+   "default_level": "3B",
+   "criteria": {
+    "2": "douleur intense ou suspicion de torsion",
+    "3B": "avis référent (MAO, MCO)"
+   },
+   "page": 2
+  },
+  {
+   "category": "GENITO-URINAIRE",
+   "name": "Dysfonction de sonde urinaire/ sonde JJ/ stomie",
+   "default_level": "3B",
+   "criteria": {
+    "2": "douleur intense, fièvre ou mauvaise tolérance",
+    "3B": "avis référent (MAO, MCO)"
+   },
+   "page": 2
+  },
+  {
+   "category": "GENITO-URINAIRE",
+   "name": "Hématurie",
+   "default_level": "3B",
+   "criteria": {
+    "2": "saignement abondant actif"
+   },
+   "page": 2
+  },
+  {
+   "category": "GENITO-URINAIRE",
+   "name": "Dysurie/brûlure mictionnelle / infection ?",
+   "default_level": "5",
+   "criteria": {
+    "3B": "fièvre",
+    "4": "enfant"
+   },
+   "page": 2
+  },
+  {
+   "category": "GENITO-URINAIRE",
+   "name": "Ecoulement ou lésion cutanéo- muqueuse génitale",
+   "default_level": "5",
+   "criteria": {
+    "3B": "fièvre"
+   },
+   "page": 2
+  },
+  {
+   "category": "GYNECO-OBSTETRIQUE",
+   "name": "Accouchement imminent ou réalisé",
+   "default_level": "1",
+   "criteria": {},
+   "page": 3
+  },
+  {
+   "category": "GYNECO-OBSTETRIQUE",
+   "name": "Problème de grossesse 1er et 2ème trimestre",
+   "default_level": "3A",
+   "criteria": {
+    "2": "métrorragies, douleur"
+   },
+   "page": 3
+  },
+  {
+   "category": "GYNECO-OBSTETRIQUE",
+   "name": "Problèmes de grossesse 3eme trimestre",
+   "default_level": "3A",
+   "criteria": {
+    "2": "métrorragies/douleur/HTA/ perte de liquide amniotique"
+   },
+   "page": 3
+  },
+  {
+   "category": "GYNECO-OBSTETRIQUE",
+   "name": "Méno-metrorragie",
+   "default_level": "3B",
+   "criteria": {
+    "2": "grossesse connue/suspectée ou saignement abondant"
+   },
+   "page": 3
+  },
+  {
+   "category": "GYNECO-OBSTETRIQUE",
+   "name": "Problème de post partum (allaitement...)",
+   "default_level": "4",
+   "criteria": {
+    "3A": "allaitement et fièvre"
+   },
+   "page": 3
+  },
+  {
+   "category": "GYNECO-OBSTETRIQUE",
+   "name": "Anomalie du sein",
+   "default_level": "5",
+   "criteria": {
+    "3B": "mastite ou abcès"
+   },
+   "page": 3
+  },
+  {
+   "category": "GYNECO-OBSTETRIQUE",
+   "name": "Anomalie vulvo-vaginale / corps étranger",
+   "default_level": "5",
+   "criteria": {},
+   "page": 3
+  },
+  {
+   "category": "INTOXICATION",
+   "name": "Intoxication médicamenteuse",
+   "default_level": "3B",
+   "criteria": {
+    "2": "mauvaise tolérance/intention suicidaire/toxiques cardiotropes ou lésionnels",
+    "3A": "enfant",
+    "3B": "avis référent (MAO, MCO)",
+    "5": "pas de mauvaise tolérance et vu tard (ex ≥ 24 h)"
+   },
+   "page": 3
+  },
+  {
+   "category": "INTOXICATION",
+   "name": "Intoxication non médicamenteuse",
+   "default_level": "3B",
+   "criteria": {
+    "2": "mauvaise tolérance/toxiques / lésionnels",
+    "3A": "enfant",
+    "3B": "avis référent (MAO, MCO)",
+    "5": "pas de mauvaise tolérance et vu tard (ex ≥ 24 h)"
+   },
+   "page": 3
+  },
+  {
+   "category": "INTOXICATION",
+   "name": "Demande de sevrage / toxicomanie",
+   "default_level": "4",
+   "criteria": {
+    "2": "agitation/violence / état de manque",
+    "3A": "enfant",
+    "5": "demande d'ordonnance pour substitution"
+   },
+   "page": 3
+  },
+  {
+   "category": "INTOXICATION",
+   "name": "Comportement ébrieux / ivresse",
+   "default_level": "4",
+   "criteria": {
+    "1": "GCS ≤ 8",
+    "2": "agitation/violence/GCS 9-13",
+    "3A": "enfant",
+    "3B": "demande des forces de l'ordre"
+   },
+   "page": 3
+  },
+  {
+   "category": "NEUROLOGIE",
+   "name": "Altération de la conscience/coma",
+   "default_level": "2",
+   "criteria": {
+    "1": "GCS ≤ 8",
+    "2": "GCS 9-13, avis référent (MAO, MCO)"
+   },
+   "page": 3
+  },
+  {
+   "category": "NEUROLOGIE",
+   "name": "Déficit moteur, sensitif, sensoriel ou du langage/AVC",
+   "default_level": "2",
+   "criteria": {
+    "1": "délai ≤ 4h 30",
+    "3B": "délai ≥ 24 h et avis MAO, MCO"
+   },
+   "page": 3
+  },
+  {
+   "category": "NEUROLOGIE",
+   "name": "Convulsions",
+   "default_level": "3B",
+   "criteria": {
+    "2": "crises multiples ou en cours confusion, TC, déficit ou fièvre",
+    "3B": "récupération complète post critique"
+   },
+   "page": 3
+  },
+  {
+   "category": "NEUROLOGIE",
+   "name": "Confusion/désorientation temporo spatiale",
+   "default_level": "3B",
+   "criteria": {
+    "2": "fièvre"
+   },
+   "page": 3
+  },
+  {
+   "category": "NEUROLOGIE",
+   "name": "Céphalée",
+   "default_level": "3B",
+   "criteria": {
+    "2": "inhabituelle (premier épisode, brutale, intense… ou fièvre)",
+    "3B": "habituelle/migraine"
+   },
+   "page": 3
+  },
+  {
+   "category": "NEUROLOGIE",
+   "name": "Vertiges/trouble de l'équilibre",
+   "default_level": "3B",
+   "criteria": {
+    "2": "signes neurologiques associés, céphalée brutale",
+    "5": "troubles anciens et stables"
+   },
+   "page": 3
+  },
+  {
+   "category": "OPHTHALMOLOGIE",
+   "name": "Corps étranger / brûlure oculaire",
+   "default_level": "3B",
+   "criteria": {
+    "2": "douleur intense, brûlure chimique",
+    "3B": "avis référent (MAO, MCO)"
+   },
+   "page": 4
+  },
+  {
+   "category": "OPHTHALMOLOGIE",
+   "name": "Trouble visuel /œil douloureux / cécité",
+   "default_level": "3B",
+   "criteria": {
+    "2": "début brutal",
+    "3B": "avis référent (MAO, MCO)"
+   },
+   "page": 4
+  },
+  {
+   "category": "OPHTHALMOLOGIE",
+   "name": "Démangeaison / œil rouge",
+   "default_level": "5",
+   "criteria": {},
+   "page": 4
+  },
+  {
+   "category": "ORL / STOMATOLOGIE",
+   "name": "Epistaxis",
+   "default_level": "3B",
+   "criteria": {
+    "2": "saignement abondant actif",
+    "3B": "saignement abondant résolutif",
+    "5": "saignement peu abondant résolutif"
+   },
+   "page": 4
+  },
+  {
+   "category": "ORL / STOMATOLOGIE",
+   "name": "Trouble de l'audition/accouphènes",
+   "default_level": "4",
+   "criteria": {
+    "2": "surdité brutale"
+   },
+   "page": 4
+  },
+  {
+   "category": "ORL / STOMATOLOGIE",
+   "name": "Tuméfaction ORL ou cervicale",
+   "default_level": "4",
+   "criteria": {
+    "3B": "fièvre ou signes locaux importants"
+   },
+   "page": 4
+  },
+  {
+   "category": "ORL / STOMATOLOGIE",
+   "name": "Corps étranger ORL",
+   "default_level": "4",
+   "criteria": {
+    "2": "dyspnée inspiratoire"
+   },
+   "page": 4
+  },
+  {
+   "category": "ORL / STOMATOLOGIE",
+   "name": "Pathologie de l'oreille / otite",
+   "default_level": "5",
+   "criteria": {},
+   "page": 4
+  },
+  {
+   "category": "ORL / STOMATOLOGIE",
+   "name": "Douleur de gorge / angine / stomatite",
+   "default_level": "5",
+   "criteria": {
+    "3B": "mauvaise intolérance ou aphagie"
+   },
+   "page": 4
+  },
+  {
+   "category": "ORL / STOMATOLOGIE",
+   "name": "Obstruction nasale / rhinite / sinusite",
+   "default_level": "5",
+   "criteria": {
+    "3B": "sinusite fébrile"
+   },
+   "page": 4
+  },
+  {
+   "category": "ORL / STOMATOLOGIE",
+   "name": "Problème de dent ou de gencive",
+   "default_level": "5",
+   "criteria": {
+    "3B": "signes locaux importants, douleur résistante aux antalgiques"
+   },
+   "page": 4
+  },
+  {
+   "category": "PEAU",
+   "name": "Ecchymose / hématome spontané(e)",
+   "default_level": "3B",
+   "criteria": {},
+   "page": 4
+  },
+  {
+   "category": "PEAU",
+   "name": "Abcès ou infection localisée de la peau",
+   "default_level": "4",
+   "criteria": {
+    "3B": "fièvre ou abcès volumineux"
+   },
+   "page": 4
+  },
+  {
+   "category": "PEAU",
+   "name": "Erythème étendu et autres éruptions / oèdeme spontané",
+   "default_level": "5",
+   "criteria": {
+    "2": "anaphylaxie",
+    "3B": "fièvre ou mauvaise tolérance",
+    "4": "étendu",
+    "5": "localisé"
+   },
+   "page": 4
+  },
+  {
+   "category": "PEAU",
+   "name": "Morsure, piqûre, prurit, parasitose",
+   "default_level": "5",
+   "criteria": {
+    "2": "morsure de serpent/scorpion …",
+    "3B": "fièvre ou signes locaux importants",
+    "4": "étendu",
+    "5": "localisé"
+   },
+   "page": 4
+  },
+  {
+   "category": "PEAU",
+   "name": "Corps étranger sous la peau",
+   "default_level": "5",
+   "criteria": {
+    "3B": "corps étrangers multiples, complexes"
+   },
+   "page": 4
+  },
+  {
+   "category": "PEDIATRIE ≤ 2 ans (pathologie spécifique)",
+   "name": "Dyspnée avec sifflement respiratoire",
+   "default_level": "2",
+   "criteria": {
+    "3A": "sifflement sans dyspnée"
+   },
+   "page": 5
+  },
+  {
+   "category": "PEDIATRIE ≤ 2 ans (pathologie spécifique)",
+   "name": "Fièvre ≤ 3 mois",
+   "default_level": "2",
+   "criteria": {},
+   "page": 5
+  },
+  {
+   "category": "PEDIATRIE ≤ 2 ans (pathologie spécifique)",
+   "name": "Convulsion hyperthermique",
+   "default_level": "3B",
+   "criteria": {
+    "2": "récidive ou durée ≥ 10 min, ou hypotonie",
+    "3A": "récupération complète"
+   },
+   "page": 5
+  },
+  {
+   "category": "PEDIATRIE ≤ 2 ans (pathologie spécifique)",
+   "name": "Diarrhée / vomissements du nourrisson (≤ 24 mois)",
+   "default_level": "3B",
+   "criteria": {
+    "2": "perte de poids ≥ 10% ou hypotonie",
+    "3A": "≤ 6 mois"
+   },
+   "page": 5
+  },
+  {
+   "category": "PEDIATRIE ≤ 2 ans (pathologie spécifique)",
+   "name": "Troubles alimentaires du nourrisson (≤ 6 mois)",
+   "default_level": "4",
+   "criteria": {
+    "2": "perte de poids ≥ 10% ou hypotonie",
+    "3A": "perte de poids ≤ 10%"
+   },
+   "page": 5
+  },
+  {
+   "category": "PEDIATRIE ≤ 2 ans (pathologie spécifique)",
+   "name": "Bradycardie",
+   "default_level": "4",
+   "criteria": {
+    "2": "avant 1 an : FC ≤ 80/min après 1 an : FC ≤ 60:min"
+   },
+   "page": 5
+  },
+  {
+   "category": "PEDIATRIE ≤ 2 ans (pathologie spécifique)",
+   "name": "Ictère néonatal",
+   "default_level": "4",
+   "criteria": {
+    "2": "perte de poids ≤ 10% ou selles décolorées"
+   },
+   "page": 5
+  },
+  {
+   "category": "PEDIATRIE ≤ 2 ans (pathologie spécifique)",
+   "name": "Tachycardie",
+   "default_level": "4",
+   "criteria": {
+    "2": "avant 1 an : FC ≥ 180/min après 1 an : FC ≥ 160/min"
+   },
+   "page": 5
+  },
+  {
+   "category": "PEDIATRIE ≤ 2 ans (pathologie spécifique)",
+   "name": "Hypotension",
+   "default_level": "4",
+   "criteria": {
+    "2": "1-10 ans : PAS ≤ 70 mmHg (+ âge en année x 2)"
+   },
+   "page": 5
+  },
+  {
+   "category": "PEDIATRIE ≤ 2 ans (pathologie spécifique)",
+   "name": "Pleurs incoercibles",
+   "default_level": "4",
+   "criteria": {
+    "3A": "pleurs dans le box de l'IOA"
+   },
+   "page": 5
+  },
+  {
+   "category": "PSYCHIATRIE",
+   "name": "Idée / comportement suicidaire",
+   "default_level": "2",
+   "criteria": {},
+   "page": 5
+  },
+  {
+   "category": "PSYCHIATRIE",
+   "name": "Troubles du comportement / psychiatrie",
+   "default_level": "3B",
+   "criteria": {
+    "2": "agitation, violence, délire, hallucinations",
+    "3A": "enfant"
+   },
+   "page": 5
+  },
+  {
+   "category": "PSYCHIATRIE",
+   "name": "Anxiété / dépression / consultation psychiatrique",
+   "default_level": "4",
+   "criteria": {
+    "2": "anxiété majeure /attaque de panique",
+    "3A": "enfant",
+    "3B": "demande d'hospitalisation"
+   },
+   "page": 5
+  },
+  {
+   "category": "RESPIRATOIRE",
+   "name": "Dyspnée / insuffisance respiratoire",
+   "default_level": "3B",
+   "criteria": {
+    "1": "détresse respiratoire ou FR ≥ 40/min ou SpO2 < 86%",
+    "2": "dyspnée à la parole/tirage/orthopnée ou FR 30-40 /min ou SpO2 86-90%"
+   },
+   "page": 6
+  },
+  {
+   "category": "RESPIRATOIRE",
+   "name": "Asthme ou aggravation BPCO",
+   "default_level": "3B",
+   "criteria": {
+    "1": "détresse respiratoire",
+    "2": "DEP ≤ 200 ou dyspnée à la parole/tirage/orthopnée",
+    "4": "DEP ≥300 l/min et asthme"
+   },
+   "page": 6
+  },
+  {
+   "category": "RESPIRATOIRE",
+   "name": "Hémoptysie",
+   "default_level": "3B",
+   "criteria": {
+    "1": "détresse respiratoire",
+    "2": "hémoptysie répétée ou abondante"
+   },
+   "page": 6
+  },
+  {
+   "category": "RESPIRATOIRE",
+   "name": "Douleur thoracique / embolie / pneumopathie / pneumothorax",
+   "default_level": "3B",
+   "criteria": {
+    "1": "détresse respiratoire",
+    "2": "dyspnée à la parole/tirage/orthopnée"
+   },
+   "page": 6
+  },
+  {
+   "category": "RESPIRATOIRE",
+   "name": "Corps étranger voies aériennes",
+   "default_level": "3B",
+   "criteria": {
+    "1": "détresse respiratoire",
+    "2": "dyspnée à la parole, tirage, orthopnée",
+    "3A": "enfant",
+    "3B": "pas de dyspnée"
+   },
+   "page": 6
+  },
+  {
+   "category": "RESPIRATOIRE",
+   "name": "Toux / bronchite",
+   "default_level": "5",
+   "criteria": {
+    "3B": "fièvre, ou signes respiratoires associés"
+   },
+   "page": 6
+  },
+  {
+   "category": "RHUMATOLOGIE",
+   "name": "Douleur articulaire/arthrose/arthrite",
+   "default_level": "4",
+   "criteria": {
+    "3B": "fièvre ou signes locaux importants"
+   },
+   "page": 6
+  },
+  {
+   "category": "RHUMATOLOGIE",
+   "name": "Douleur rachidienne (cervicale, dorsale ou lombaire)",
+   "default_level": "5",
+   "criteria": {
+    "2": "déficit sensitif ou moteur associé",
+    "3B": "fièvre ou paresthésies"
+   },
+   "page": 6
+  },
+  {
+   "category": "RHUMATOLOGIE",
+   "name": "Douleur de membre/sciatique",
+   "default_level": "5",
+   "criteria": {
+    "3B": "fièvre ou impotence du membre"
+   },
+   "page": 6
+  },
+  {
+   "category": "TRAUMATOLOGIE",
+   "name": "Traumatisme avec amputation",
+   "default_level": "1",
+   "criteria": {},
+   "page": 7
+  },
+  {
+   "category": "TRAUMATOLOGIE",
+   "name": "Traumatisme abdomen/thorax/cervical",
+   "default_level": "2",
+   "criteria": {
+    "1": "pénétrant",
+    "2": "haute vélocité",
+    "3B": "faible velocité et mauvaise tolérance",
+    "4": "faible velocité sans mauvaise tolérance ou gêne limitée"
+   },
+   "page": 7
+  },
+  {
+   "category": "TRAUMATOLOGIE",
+   "name": "Agression sexuelle et sévices",
+   "default_level": "2",
+   "criteria": {},
+   "page": 7
+  },
+  {
+   "category": "TRAUMATOLOGIE",
+   "name": "Brûlure",
+   "default_level": "3B",
+   "criteria": {
+    "2": "brulure étendue ou main/visage",
+    "3A": "≤ 24 mois et brûlure peu étendue",
+    "3B": "avis référent (MAO, MCO)",
+    "5": "brulure peu étendue..., consultation tardive"
+   },
+   "page": 7
+  },
+  {
+   "category": "TRAUMATOLOGIE",
+   "name": "Traumatisme de bassin/hanche/fémur/rachis",
+   "default_level": "3B",
+   "criteria": {
+    "2": "haute vélocité",
+    "3B": "faible velocité et mauvaise tolérance",
+    "4": "faible velocité sans mauvaise tolérance ou gêne limitée"
+   },
+   "page": 7
+  },
+  {
+   "category": "TRAUMATOLOGIE",
+   "name": "Traumatisme oculaire",
+   "default_level": "3B",
+   "criteria": {
+    "2": "haute vélocité",
+    "3B": "faible velocité et mauvaise tolérance",
+    "4": "faible velocité sans mauvaise tolérance ou gêne limitée"
+   },
+   "page": 7
+  },
+  {
+   "category": "TRAUMATOLOGIE",
+   "name": "Traumatisme maxillo- facial/oreille",
+   "default_level": "3B",
+   "criteria": {
+    "2": "haute vélocité",
+    "3B": "faible velocité et mauvaise tolérance",
+    "4": "faible velocité sans mauvaise tolérance ou gêne limitée"
+   },
+   "page": 7
+  },
+  {
+   "category": "TRAUMATOLOGIE",
+   "name": "Plaie",
+   "default_level": "4",
+   "criteria": {
+    "2": "plaie délabrante, saignement actif",
+    "3B": "plaie(s) large, complexe, main",
+    "4": "plaie(s) superficielle(s) hormis main",
+    "5": "excoriation(s)"
+   },
+   "page": 7
+  },
+  {
+   "category": "TRAUMATOLOGIE",
+   "name": "Traumatisme d'épaule ou distal de membre",
+   "default_level": "4",
+   "criteria": {
+    "2": "haute vélocité, grande déformation/ischémie",
+    "3B": "impotence totale, déformation",
+    "4": "impotence modérée ou petite déformation",
+    "5": "ni impotence, ni défromation"
+   },
+   "page": 7
+  },
+  {
+   "category": "TRAUMATOLOGIE",
+   "name": "Electrisation",
+   "default_level": "4",
+   "criteria": {
+    "2": "perte de connaissance, brûlure, foudre",
+    "3B": "haute tension, temps de contact long",
+    "4": "courant domestique"
+   },
+   "page": 7
+  },
+  {
+   "category": "TRAUMATOLOGIE",
+   "name": "Traumatisme crânien",
+   "default_level": "5",
+   "criteria": {
+    "1": "coma (GCS ≤ 8)",
+    "2": "GCS 9-13, déficit neurologique, convulsion, otorragie, AOD/AVK, vomissements répétés",
+    "3B": "perte de connaissance avant ou après",
+    "4": "plaie/hématome"
+   },
+   "page": 7
+  },
+  {
+   "category": "DIVERS",
+   "name": "Pathologie rare et grave en poussée (ex. drépanocytose...)",
+   "default_level": "2",
+   "criteria": {
+    "3B": "avis référent (MAO, MCO)"
+   },
+   "page": 8
+  },
+  {
+   "category": "DIVERS",
+   "name": "Hypothermie",
+   "default_level": "2",
+   "criteria": {
+    "1": "T° ≤ 32° C",
+    "2": "32° C ≤ T° ≤ 35,2° C"
+   },
+   "page": 8
+  },
+  {
+   "category": "DIVERS",
+   "name": "Hyperglycémie",
+   "default_level": "3B",
+   "criteria": {
+    "2": "cétose élevée, trouble de conscience",
+    "3B": "glycémie ≥ 20 mmol/l ou cétose positive",
+    "4": "glycémie ≤ 20 mmol/l et cétose négative"
+   },
+   "page": 8
+  },
+  {
+   "category": "DIVERS",
+   "name": "Hypoglycémie",
+   "default_level": "3B",
+   "criteria": {
+    "1": "coma (GCS ≤ 8)",
+    "2": "mauvaise tolérance/GCS 9 -13"
+   },
+   "page": 8
+  },
+  {
+   "category": "DIVERS",
+   "name": "Anomalie de résultat biologique",
+   "default_level": "3B",
+   "criteria": {
+    "2": "symptomatique",
+    "3B": "avis référent (MAO, MCO)"
+   },
+   "page": 8
+  },
+  {
+   "category": "DIVERS",
+   "name": "AEG / Asthénie",
+   "default_level": "3B",
+   "criteria": {
+    "3B": "signes objectifs d'altération de l'état général",
+    "5": "ni comorbidiés ni signes objectifs"
+   },
+   "page": 8
+  },
+  {
+   "category": "DIVERS",
+   "name": "Coup de chaleur / insolation",
+   "default_level": "3B",
+   "criteria": {
+    "1": "coma (GCS ≤ 8)",
+    "2": "T° ≥ 40° C/GCS 9-13"
+   },
+   "page": 8
+  },
+  {
+   "category": "DIVERS",
+   "name": "Gelure / Lésions liées au froid",
+   "default_level": "3B",
+   "criteria": {
+    "2": "signes de nécrose, déficit sensitif ou moteur"
+   },
+   "page": 8
+  },
+  {
+   "category": "DIVERS",
+   "name": "Allergie",
+   "default_level": "4",
+   "criteria": {
+    "2": "dyspnée/risque d'obstruction/mauvaise tolérance"
+   },
+   "page": 8
+  },
+  {
+   "category": "DIVERS",
+   "name": "Problème suite de soins (pansements...)",
+   "default_level": "5",
+   "criteria": {},
+   "page": 8
+  },
+  {
+   "category": "DIVERS",
+   "name": "Renouvellement ordonnance",
+   "default_level": "5",
+   "criteria": {},
+   "page": 8
+  },
+  {
+   "category": "DIVERS",
+   "name": "Examen à des fins administratives / certificat / réquisition",
+   "default_level": "5",
+   "criteria": {
+    "3B": "demande des forces de l'ordre"
+   },
+   "page": 8
+  },
+  {
+   "category": "DIVERS",
+   "name": "Demande d'hébergement pour raison sociale",
+   "default_level": "5",
+   "criteria": {},
+   "page": 8
+  }
+ ]
+}

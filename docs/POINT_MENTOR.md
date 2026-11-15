@@ -14,7 +14,11 @@ saura pas forcément trier les patients.
 **Choix retenu :** ajouter des vignettes synthétiques en français, dérivées du référentiel FRENCH,
 pour l'entraînement et l'évaluation, et les signaler comme synthétiques.
 
-**Question :** cette approche est-elle acceptée ? Une autre source est-elle attendue ?
+**Fait :** 61 motifs FRENCH et 193 critères décrits dans `configs/french_vignettes.yaml`, chaque
+niveau étant vérifié contre le tableau extrait du PDF de la SFMU (voir `docs/DONNEES.md`).
+
+**Question :** cette approche est-elle acceptée ? Une autre source est-elle attendue ? Un
+soignant pourrait-il relire un échantillon de vignettes ?
 
 ### 2. Les paires DPO ne sont ni « validées cliniquement » ni francophones
 
@@ -49,8 +53,8 @@ acceptable ?
 | Point | Constat | Choix retenu |
 |---|---|---|
 | Nom du corpus | « MediQA » dans le texte, `ANR-MALADES/MediQAl` dans le lien | MediQAl |
-| Lien FrenchMedMCQA | Lien cassé (`http://nthngdy/frenchmedmcqa`). Sur le Hub, `nthngdy/frenchmedmcqa` : 1 080 lignes, sans licence ni description ; `qanastek/frenchmedmcqa` : 3 105 questions, Apache 2.0, à script de chargement | `qanastek`, en lisant ses fichiers directement, sauf avis contraire |
-| Licence MedQuAD | Aucune sur le miroir `keivalya/MedQuad-MedicalQnADataset` | Vérifier la licence du dépôt d'origine avant publication |
+| Lien FrenchMedMCQA | Lien cassé (`http://nthngdy/frenchmedmcqa`). Sur le Hub, `nthngdy/frenchmedmcqa` : 1 080 lignes, sans licence ni description, et apparemment limité aux QCM à réponse unique ; `qanastek/frenchmedmcqa` : 3 105 questions, Apache 2.0, données dans `DEFT-2023-FULL.zip` avec un script de chargement | `qanastek`, en lisant le zip directement, sauf avis contraire |
+| Licence MedQuAD | Aucune sur le miroir `keivalya/MedQuad-MedicalQnADataset` ; CC BY 4.0 sur le dépôt d'origine `abachaa/MedQuAD` | **Réglé** : dépôt d'origine utilisé, attribution à prévoir |
 | Modèle livré | Le tableau des livrables cite « SFT et LoRA », la mission ajoute DPO | SFT + LoRA + DPO |
 | GRPO | Cité seulement à l'étape 2 (« DPO / GRPO ») | Facultatif |
 | Ressource manquante | « Tutoriels LoRA + PEFT [nom & lien] » est resté à l'état de modèle | Documentation PEFT |
