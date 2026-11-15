@@ -81,6 +81,7 @@ th, td { border-bottom: 1px solid var(--line); padding: 4px; text-align: left; v
 .closed { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-top: 12px;
   font-size: 13px; background: var(--bg); }
 .closed strong { display: block; }
+.note { color: var(--muted); font-size: 13px; margin-top: 6px; }
 .err { color: var(--max); font-size: 13px; margin-top: 6px; min-height: 1em; }
 </style>
 </head>
@@ -109,6 +110,7 @@ th, td { border-bottom: 1px solid var(--line); padding: 4px; text-align: left; v
       <textarea id="text" rows="2" maxlength="4000" placeholder="Ex. : J'ai mal au ventre depuis hier soir, surtout en bas à droite." required></textarea>
       <button id="send" type="submit">Envoyer</button>
     </form>
+    <div class="note" id="note" aria-live="polite"></div>
     <div class="err" id="err"></div>
     <div class="row" style="justify-content: space-between">
       <span class="small" id="session">Pas de session</span>
@@ -166,8 +168,13 @@ th, td { border-bottom: 1px solid var(--line); padding: 4px; text-align: left; v
   let lastModelAnswer = 0;
   const PLACEHOLDER = $("text").placeholder;
 
-  function setClosed(closed) {
+  let closed = false;
+  let closedPriority = null;
+
+  function setClosed(value) {
+    closed = value;
     $("closed").hidden = !closed;
+    if (!closed) $("note").textContent = "";
     $("text").placeholder = closed ? "Signaler une aggravation (ex. : la douleur augmente)" : PLACEHOLDER;
     $("send").dataset.label = closed ? "Signaler" : "Envoyer";
     $("send").textContent = $("send").dataset.label;
@@ -254,6 +261,7 @@ th, td { border-bottom: 1px solid var(--line); padding: 4px; text-align: left; v
     ev.preventDefault();
     const text = $("text").value.trim();
     $("err").textContent = "";
+    $("note").textContent = "";
     if (!text) return;
     if (!$("apikey").value) { $("err").textContent = "Saisissez la clé d'API."; return; }
     const body = { message: text };
@@ -281,13 +289,31 @@ th, td { border-bottom: 1px solid var(--line); padding: 4px; text-align: left; v
       lastContext = ctxKey;
       sessionId = d.session_id;
       $("session").textContent = "Session " + sessionId;
+      if (closed && d.status === "relais_ioa") {
+        // Session close : pas de nouvelle bulle si le niveau ne change pas (évite les « merci »
+        // en boucle) ; une bulle seulement si un contrôle de sécurité relève le niveau.
+        if (d.priority !== closedPriority && d.guards.length) {
+          const why = d.guards.map((g) => g.reason).join(" ; ");
+          addMsg("agent", "Niveau relevé à " + LABEL[d.priority] + " (tri FRENCH " +
+            d.french_level + ") : " + why + ".\n" + d.message, "Signalement pris en compte");
+          showResult(d);
+        } else {
+          $("note").textContent = "Message transmis à l'accueil : niveau inchangé" +
+            (d.priority ? " (" + LABEL[d.priority] + ")." : ".");
+        }
+        closedPriority = d.priority;
+        return;
+      }
       addMsg("agent", d.message, d.status === "evaluation" ? "Évaluation" :
         d.status === "relais_ioa" ? "Relais IOA" : "Question");
       showResult(d);
       // Session close côté API après une évaluation : on le montre (pas de « merci » en boucle).
       // Un relais pour modèle indisponible n'est pas une fin : le patient peut réessayer.
       const unavailable = d.message.includes("modèle indisponible");
-      if (d.status === "evaluation" || (d.status === "relais_ioa" && !unavailable)) setClosed(true);
+      if (d.status === "evaluation" || (d.status === "relais_ioa" && !unavailable)) {
+        setClosed(true);
+        closedPriority = d.priority;
+      }
       if (unavailable) {
         $("err").textContent = "Le modèle démarre (2 à 3 min) : réessayez quand la pastille est verte.";
         lastModelAnswer = 0;
