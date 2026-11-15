@@ -630,3 +630,39 @@ Hors régime établi : le démarrage à froid (GPU éteint après 5 min sans req
 redéploiement) prend 2 à 3 minutes quand le modèle est en cache. Pendant ce temps, l'API répond
 « relais IOA » après 30 s, avec les garde-fous sur les constantes : le mode dégradé fonctionne,
 mais le délai est trop long pour un patient. La première réponse après le démarrage a pris 11,3 s.
+
+## vLLM ou Transformers seul ? (15/11/2026)
+
+Script : `deploy/bench_engines.py` (résultat brut dans `outputs/bench_engines.json`). Même GPU
+(NVIDIA A10 24 Go), mêmes 60 requêtes (prompt système + premier message patient), mêmes
+réglages : bf16, décodage glouton, 320 jetons au plus, arrêt sur <|im_end|>. Transformers 5.22.1
+(versions de l'évaluation) dans une fonction Modal éphémère ; vLLM 0.32.0 appelé en direct, sans
+l'API.
+
+| | Transformers | vLLM |
+|---|---|---|
+| Latence, 1 requête à la fois (p50 / p95) | 3,90 s / **4,91 s** | 1,58 s / **1,93 s** |
+| Débit de génération, 1 requête | 41 jetons/s | 100 jetons/s |
+| 4 requêtes : p95 / débit | 6,05 s / 0,79 req/s (lot statique) | 2,01 s / 2,85 req/s |
+| 8 requêtes : p95 / débit | 5,98 s / 1,38 req/s | 2,10 s / 5,19 req/s |
+| 16 requêtes : p95 / débit | 6,24 s / 2,51 req/s | 2,37 s / 8,85 req/s |
+| Mémoire GPU | 4,4 Go (pic alloué) | 20 Go (cache KV réservé d'avance) |
+| Niveau de priorité identique | 60 / 60 | |
+| Texte strictement identique | 54 / 60 | |
+
+Lecture :
+- **Une requête seule** : vLLM est 2,5 fois plus rapide (noyaux d'attention et graphes CUDA).
+  Transformers dépasse déjà le seuil de 3 s au p95 (4,91 s), alors que sa mesure ne compte ni
+  serveur HTTP ni réseau : elle est favorable à Transformers.
+- **Plusieurs requêtes** : avec des lots statiques, chaque requête attend la plus longue de son
+  lot et un lot attend le précédent ; le p95 reste au-dessus de 6 s. Le batching continu de vLLM
+  garde le p95 à 2,4 s pour 16 requêtes, avec un débit 3,5 fois supérieur.
+- **Mêmes décisions** : les 60 niveaux de priorité sont identiques ; 6 textes diffèrent par de
+  petites variations (arrondis bf16 de noyaux différents), sans effet sur le niveau.
+- Le temps au premier jeton n'est pas comparable : 27 ms pour Transformers mesuré dans le
+  conteneur, 150 ms pour vLLM réseau transatlantique compris.
+- Contrepartie de vLLM : il réserve 90 % de la mémoire du GPU et démarre plus lentement
+  (compilation des graphes), ce qui allonge le démarrage à froid.
+
+**Décision : vLLM.** C'est le seul des deux qui tient le seuil de 3 s, dès la première requête,
+et il le tient encore à 16 requêtes simultanées, pour les mêmes niveaux de priorité.

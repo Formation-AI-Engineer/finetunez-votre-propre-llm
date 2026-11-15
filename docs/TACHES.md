@@ -308,7 +308,9 @@ Plus rien ne bloque l'étape 1.
       2,03 s (16 simultanées), débit 0,73 → 8,65 req/s, premier jeton p95 143 ms, mémoire GPU
       20,0 / 23,0 Go (cache KV). Seuil 3 s tenu ; commit d'audit bloquant trouvé et corrigé
 - [ ] Robustesse : entrées vides ou très longues, injection de prompt, anglais, vLLM indisponible
-- [ ] Comparer vLLM et Transformers seul pour justifier le choix
+- [x] Comparer vLLM et Transformers seul (`deploy/bench_engines.py`, A10, 15/11/2026) : p95
+      1,93 s contre 4,91 s pour une requête, 2,37 s contre 6,24 s à 16 ; débit 8,85 contre
+      2,51 req/s ; niveaux identiques 60/60. Décision : vLLM
 - [ ] Limites d'usage, surveillance après déploiement, checklist go / no-go
 
 ---
