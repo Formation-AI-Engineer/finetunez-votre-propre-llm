@@ -337,3 +337,28 @@ def test_session_is_closed_after_an_evaluation(client):
     ).json()
     assert worse["priority"] == "maximale"
     assert {g["name"] for g in worse["guards"]} >= {"constantes"}
+
+
+def test_demo_page_has_unique_ids():
+    # Une icône `id="chat"` masquait la zone de conversation du même nom (démonstration du 15/11).
+    import re
+
+    from triage.api.demo_page import DEMO_HTML
+
+    ids = re.findall(r'\bid="([^"]+)"', DEMO_HTML)
+    assert len(ids) == len(set(ids))
+
+
+def test_header_buried_in_invented_text_is_rewritten(client):
+    # Démonstration du 15/11 : texte inventé (« ## Age : 32 ans ») et en-tête au 812e caractère.
+    noise = "Vous êtes donc à niveau MAXIMALE. # ECEM1\n## Age : 32 ans\n## Weigh : 52 kg\n"
+    api, _ = client(noise + evaluation("MAXIMALE", "2"))
+    out = api.post("/api/v1/triage", json={"message": "Mal au ventre, je ne bois plus."}).json()
+    assert out["priority"] == "maximale"
+    assert out["message"].startswith("Niveau de priorité : MAXIMALE (tri FRENCH 2)")
+    assert "ECEM1" not in out["message"] and "Age : 32" not in out["message"]
+    assert any("format non standard" in a for a in out["alerts"])
+
+
+def test_demo_page_is_never_cached():
+    assert TestClient(main.app).get("/").headers["cache-control"] == "no-store"

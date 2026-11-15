@@ -91,8 +91,9 @@ def require_audit_key(x_audit_key: Annotated[str | None, Header()] = None) -> No
 
 
 @app.get("/", response_class=HTMLResponse, include_in_schema=False)
-def demo() -> str:
-    return DEMO_HTML
+def demo() -> HTMLResponse:
+    # Jamais en cache : une page périmée gardée par le navigateur a masqué un correctif.
+    return HTMLResponse(DEMO_HTML, headers={"Cache-Control": "no-store"})
 
 
 @app.get("/api/v1/healthcheck")
