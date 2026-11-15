@@ -7,7 +7,14 @@ le baisser (docs/DECISIONS.md, point 7) :
 2. la cohérence du critère FRENCH cité par le modèle (src/triage/consistency.py) ;
 3. les drapeaux rouges sur le récit du patient (src/triage/red_flags.py).
 Les constantes sont aussi contrôlées quand le modèle pose une question, ou s'il est indisponible :
-une constante critique produit une alerte dans tous les cas.
+une constante critique produit une alerte dans tous les cas ; un drapeau rouge dans le récit aussi.
+
+Robustesse (tests sur le déploiement du 15/11/2026) :
+- quand un garde-fou relève le niveau, le message est réécrit à partir du niveau final (sinon le
+  texte du modèle, par exemple obéissant à une injection, annoncerait un niveau plus bas) ; le
+  texte du modèle reste dans le journal d'audit (`model_answer`) ;
+- un message en anglais part à l'IOA sans appel au modèle (triage validé en français seulement) ;
+- une réponse qui recopie le prompt système est remplacée par une demande de recentrage.
 """
 
 from __future__ import annotations
@@ -21,10 +28,12 @@ from typing import Literal, Protocol
 
 from triage.consistency import cited_criterion
 from triage.data.schema import FRENCH_TO_PRIORITY, PriorityLevel, Vitals
+from triage.language import is_english
 from triage.output import parse_assessment
 from triage.prompts import SYSTEM_PROMPT
 from triage.red_flags import red_flag_floor
 from triage.rules import vital_alerts, vital_floor
+from triage.wording import EXPLANATION, ORIENTATION, PRIORITY_LABEL
 
 PRIORITIES: tuple[PriorityLevel, ...] = ("maximale", "moderee", "differee")
 DISCLAIMER = (
@@ -33,6 +42,33 @@ DISCLAIMER = (
 )
 MAX_TURNS = 8  # échanges patient-agent par session ; au-delà, l'IOA prend le relais
 SESSION_TTL_SECONDS = 3600
+ENGLISH_HANDOVER = (
+    "Un infirmier ou une infirmière d'accueil va évaluer votre situation directement. "
+    "A triage nurse will assess you directly."
+)
+REFOCUS = (
+    "Je ne peux pas répondre à cette demande. Pouvez-vous me décrire ce qui vous amène aux "
+    "urgences ?"
+)
+# Phrases du prompt système : une réponse qui en recopie une est une fuite.
+_SYSTEM_SENTENCES = [s.strip() for s in SYSTEM_PROMPT.split(". ") if len(s.strip()) > 40]
+
+
+def leaks_system_prompt(answer: str) -> bool:
+    flat = " ".join(answer.split())
+    return any(sentence in flat for sentence in _SYSTEM_SENTENCES)
+
+
+def guarded_message(priority: str, level: str, guards: list[Guard]) -> str:
+    """Message d'évaluation réécrit quand un garde-fou a relevé le niveau du modèle."""
+    reasons = " ; ".join(g.reason for g in guards)
+    return (
+        f"Niveau de priorité : {PRIORITY_LABEL[priority]} (tri FRENCH {level})\n"
+        f"Niveau relevé par un contrôle de sécurité : {reasons}.\n"
+        f"Explication : {EXPLANATION[priority]}\n"
+        f"Conduite proposée : {ORIENTATION[level]}\n"
+        f"{DISCLAIMER}"
+    )
 
 
 class ModelUnavailable(RuntimeError):
@@ -66,6 +102,7 @@ class TriageResult:
     turn: int = 0
     model_id: str = ""
     latency_ms: int = 0
+    model_answer: str | None = None  # texte brut du modèle, s'il diffère du message (audit)
 
 
 @dataclass
@@ -157,6 +194,10 @@ class TriageService:
 
         if session.turns >= MAX_TURNS:
             return self._handover(result, session, "nombre maximal d'échanges atteint")
+        if is_english(text):
+            self._handover(result, session, "message en anglais")
+            result.message = ENGLISH_HANDOVER
+            return result
         session.messages.append(
             {"role": "user", "content": render_turn(text, age_years, vitals, observation)}
         )
@@ -171,10 +212,19 @@ class TriageService:
         session.turns += 1
         result.turn = session.turns
         result.message = answer.strip()
+        story = " ".join(m["content"] for m in session.messages if m["role"] == "user")
 
+        if leaks_system_prompt(answer):
+            result.model_answer, result.message = result.message, REFOCUS
+            return result
         assessment = parse_assessment(answer)
         if assessment is None:
-            # Question de recueil : pas de niveau. Une constante critique reste signalée.
+            # Question de recueil : pas de niveau. Une constante critique ou un drapeau rouge
+            # dans le récit restent signalés à l'IOA.
+            if hit := red_flag_floor(story, session.age_years):
+                result.alerts.append(
+                    f"Drapeau rouge : {hit.name} (« {hit.excerpt} »), {hit.motif}, tri {hit.level}"
+                )
             return result
         result.status = "evaluation"
         result.model_priority = assessment.priority
@@ -189,13 +239,15 @@ class TriageService:
             priority, level = FRENCH_TO_PRIORITY[cited.level], cited.level
             reason = f"critère cité « {cited.criterion} » ({cited.motif}) : tri {cited.level}"
             result.guards.append(Guard("coherence", reason, cited.level))
-        story = " ".join(m["content"] for m in session.messages if m["role"] == "user")
         hit = red_flag_floor(story, session.age_years)
         if hit and _rank(FRENCH_TO_PRIORITY[hit.level]) < _rank(priority):
             priority, level = FRENCH_TO_PRIORITY[hit.level], hit.level
             reason = f"{hit.name} (« {hit.excerpt} ») : {hit.motif}, tri {hit.level}"
             result.guards.append(Guard("drapeau_rouge", reason, hit.level))
         result.priority, result.french_level = priority, level
+        if result.guards:
+            result.model_answer = result.message
+            result.message = guarded_message(priority, level, result.guards)
         return result
 
     def _handover(self, result: TriageResult, session: Session, why: str) -> TriageResult:

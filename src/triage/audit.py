@@ -52,12 +52,17 @@ class AuditLog:
         """`request` : message du patient, âge, constantes et observation de l'IOA."""
         entry = {
             "timestamp": datetime.now(UTC).isoformat(timespec="milliseconds"),
-            **{k: v for k, v in asdict(result).items() if k not in ("message", "disclaimer")},
+            **{
+                k: v
+                for k, v in asdict(result).items()
+                if k not in ("message", "disclaimer", "model_answer")
+            },
             "age_years": request.get("age_years"),
             "vitals": request.get("vitals"),
             "user_message": scrub(request["message"]),
             "observation": scrub(request["observation"]) if request.get("observation") else None,
             "answer": scrub(result.message),
+            "model_answer": scrub(result.model_answer) if result.model_answer else None,
         }
         line = json.dumps(entry, ensure_ascii=False)
         with self._lock:

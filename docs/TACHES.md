@@ -307,7 +307,11 @@ Plus rien ne bloque l'étape 1.
 - [x] Charge (`scripts/load_test.py`, 15/11/2026, A10) : p95 serveur 1,80 s (1 requête) à
       2,03 s (16 simultanées), débit 0,73 → 8,65 req/s, premier jeton p95 143 ms, mémoire GPU
       20,0 / 23,0 Go (cache KV). Seuil 3 s tenu ; commit d'audit bloquant trouvé et corrigé
-- [ ] Robustesse : entrées vides ou très longues, injection de prompt, anglais, vLLM indisponible
+- [x] Robustesse (`scripts/robustness_test.py`, 20 cas sur le déploiement) : 18 / 20 puis
+      20 / 20 après corrections. Trouvés : message non réécrit quand un garde-fou relève le
+      niveau (injection obéie par le modèle), anglais non maîtrisé (« 911 »), fuite du prompt
+      système. Corrigés : message réécrit, anglais → relais IOA, fuite filtrée, drapeau rouge
+      signalé pendant une question
 - [x] Comparer vLLM et Transformers seul (`deploy/bench_engines.py`, A10, 15/11/2026) : p95
       1,93 s contre 4,91 s pour une requête, 2,37 s contre 6,24 s à 16 ; débit 8,85 contre
       2,51 req/s ; niveaux identiques 60/60. Décision : vLLM

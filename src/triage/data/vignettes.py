@@ -32,31 +32,13 @@ from triage.data.schema import (
 )
 from triage.prompts import SYSTEM_PROMPT
 from triage.rules import ADULT_AGE, most_severe, severity, vital_floor
+from triage.wording import EXPLANATION, ORIENTATION, PRIORITY_LABEL  # noqa: F401
 
 CONFIG_PATH = Path("configs/french_vignettes.yaml")
 SOURCE = "french_vignettes"
 LICENSE = "Synthétique, dérivé du référentiel FRENCH (SFMU)"
 STYLES = ("note", "patient", "dialogue")
 
-PRIORITY_LABEL = {"maximale": "MAXIMALE", "moderee": "MODÉRÉE", "differee": "DIFFÉRÉE"}
-EXPLANATION = {
-    "maximale": "Votre situation peut s'aggraver rapidement : un soignant doit vous prendre en "
-    "charge sans attendre.",
-    "moderee": "Votre situation doit être évaluée rapidement par un médecin, mais les éléments "
-    "recueillis ne montrent pas de danger vital immédiat. Signalez tout de suite à l'accueil "
-    "toute aggravation.",
-    "differee": "Votre situation ne semble pas urgente : vous serez pris en charge après les "
-    "patients les plus graves. Prévenez l'accueil si vos symptômes s'aggravent.",
-}
-ORIENTATION = {
-    "1": "prise en charge immédiate en salle d'accueil des urgences vitales et appel du médecin.",
-    "2": "installation rapide en box, avis médical sans délai et surveillance continue.",
-    "3A": "évaluation médicale rapide ; réévaluer les constantes en attendant, car le risque "
-    "d'aggravation est réel.",
-    "3B": "évaluation médicale rapide ; réévaluer régulièrement le patient en attendant.",
-    "4": "prise en charge non urgente en circuit court ; réévaluer en cas d'aggravation.",
-    "5": "prise en charge non urgente ; une consultation de médecine générale peut être proposée.",
-}
 DISCLAIMER = (
     "Cet avis est une aide à la décision : l'infirmier ou l'infirmière d'accueil valide le niveau "
     "de tri."
