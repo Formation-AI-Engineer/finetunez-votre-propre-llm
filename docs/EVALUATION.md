@@ -592,3 +592,41 @@ drapeaux rouges. Chiffres relevés dans la sortie du notebook.
 - **Biais d'auteur** : un même auteur a écrit ce jeu et les règles. Ce rappel de 28/29 est un
   plafond optimiste, pas une estimation de terrain.
 
+
+## Latence sur le déploiement Modal (15/11/2026)
+
+Script : `scripts/load_test.py` (résultat brut dans `outputs/load_test.json`, non versionné).
+60 requêtes par palier : premier message patient de 60 vignettes du jeu de test, une nouvelle
+session par requête (43 évaluations, 17 questions). Échauffement non compté, jusqu'à une vraie
+réponse du modèle. GPU réellement servi : **NVIDIA A10 24 Go** (aucun L4 libre, A10G en secours),
+vLLM 0.32.0, bf16, `max-model-len` 4096. Client en France, service en us-east.
+
+Latence **serveur** = `latency_ms` de l'API (modèle + garde-fous) ; latence **client** = réseau
+transatlantique compris.
+
+| Requêtes simultanées | p50 serveur | **p95 serveur** | p95 client | Débit | Relais IOA |
+|---|---|---|---|---|---|
+| 1 | 1,47 s | **1,80 s** | 1,97 s | 0,73 req/s | 0 / 60 |
+| 4 | 1,53 s | **1,89 s** | 2,07 s | 2,78 req/s | 0 / 60 |
+| 8 | 1,59 s | **1,94 s** | 2,14 s | 5,11 req/s | 0 / 60 |
+| 16 | 1,64 s | **2,03 s** | 2,38 s | 8,65 req/s | 0 / 60 |
+
+Temps au premier jeton (vLLM en streaming, 20 requêtes séquentielles) : p50 136 ms, p95 143 ms.
+Mémoire GPU : 20,0 Go sur 23,0 Go, dont l'essentiel est le cache KV réservé par vLLM
+(`gpu-memory-utilization` 0,90) ; les poids pèsent environ 3,4 Go.
+
+**Verdict : seuil p95 ≤ 3 s tenu** à tous les paliers, côté serveur comme côté client. La
+latence est dominée par la longueur de l'évaluation (≈ 150 à 250 jetons) ; le batching continu de
+vLLM fait passer le débit de 0,73 à 8,65 req/s avec moins de 0,25 s de p95 en plus.
+
+Deux défauts trouvés et corrigés pendant la mesure :
+- **arrêt de génération** : sans `stop_token_ids` sur <|im_end|>, vLLM générait jusqu'à 320
+  jetons (3 s fixes, répétitions) ; le tokenizer hérite de la fin de séquence du modèle de base ;
+- **commit du journal d'audit** : synchrone dans le middleware, il bloquait la boucle
+  d'événements (~5 s par requête, débit plafonné à 0,94 req/s, p95 client 9,8 s à 8 requêtes
+  simultanées). Désormais en arrière-plan et regroupé.
+
+Hors régime établi : le démarrage à froid (GPU éteint après 5 min sans requête, ou après un
+redéploiement) prend 2 à 3 minutes quand le modèle est en cache. Pendant ce temps, l'API répond
+« relais IOA » après 30 s, avec les garde-fous sur les constantes : le mode dégradé fonctionne,
+mais le délai est trop long pour un patient. La première réponse après le démarrage a pris 11,3 s.

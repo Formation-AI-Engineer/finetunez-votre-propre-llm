@@ -1,11 +1,12 @@
-"""Démonstration sur Modal : serveur vLLM (GPU L4, A10G en secours) et API FastAPI (CPU), deux fonctions.
+"""Démonstration sur Modal : serveur vLLM (GPU L4, A10G en secours) et API FastAPI (CPU).
 
 Préalables (une fois) :
   uv tool install modal==1.6.4 && modal token new
   modal secret create triage-chsa-hf HF_TOKEN=<jeton en lecture du dépôt privé>
   modal secret create triage-chsa-api API_KEY=<…> AUDIT_API_KEY=<…> VLLM_API_KEY=<…> \
       VLLM_BASE_URL=https://<espace>--triage-chsa-vllm.modal.run/v1
-Déploiement : PYTHONPATH=src modal deploy deploy/modal_app.py (MODEL_REVISION pour une autre révision)
+Déploiement : PYTHONPATH=src modal deploy deploy/modal_app.py
+  (MODEL_REVISION pour une autre révision)
 
 Coûts : le GPU s'éteint après 5 minutes sans requête (scaledown_window) ; aucun conteneur ne
 tourne au repos. Le premier appel après l'arrêt attend le chargement du modèle (environ 1 à
@@ -104,13 +105,29 @@ api_image = (
 @modal.concurrent(max_inputs=32)
 @modal.asgi_app()
 def api():
+    import asyncio
+
     from triage.api.main import app as fastapi_app
+
+    # Journal persistant même si le conteneur s'arrête : commit du volume après chaque tour, mais
+    # en arrière-plan et regroupé (un seul commit à la fois, relancé s'il reste des écritures).
+    # Un commit synchrone dans le middleware bloquait la boucle d'événements (~5 s par requête,
+    # requêtes sérialisées) : mesuré au test de charge du 15/11/2026.
+    state = {"dirty": False, "task": None}
+
+    async def commit_loop() -> None:
+        while state["dirty"]:
+            state["dirty"] = False
+            await audit_volume.commit.aio()
+        state["task"] = None
 
     @fastapi_app.middleware("http")
     async def commit_audit(request, call_next):
         response = await call_next(request)
         if request.url.path == "/api/v1/triage":
-            audit_volume.commit()  # journal persistant même si le conteneur s'arrête
+            state["dirty"] = True
+            if state["task"] is None:
+                state["task"] = asyncio.create_task(commit_loop())
         return response
 
     return fastapi_app

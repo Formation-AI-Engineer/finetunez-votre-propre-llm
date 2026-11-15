@@ -260,7 +260,9 @@ Plus rien ne bloque l'étape 1.
 **À la fin :** endpoint accessible, déploiement automatisé, tests de latence et d'audit réalisés.
 
 ### Service
-- [ ] Choisir le fournisseur GPU et noter le coût
+- [x] Choisir le fournisseur GPU et noter le coût : Modal, L4 (≈ 0,80 $/h) avec A10G en secours
+      (≈ 1,10 $/h), facturé à la seconde, éteint après 5 min ; 30 $ de crédits par mois,
+      plafond de dépenses à 0 $. A10 servi le 15/11 (aucun L4 libre)
 - [x] Conteneur vLLM (`vllm serve`, modèle fusionné) et test de l'API au format OpenAI :
       `deploy/modal_app.py` (vLLM 0.32.0 sur L4, A10G en secours, révision du modèle fixée,
       arrêt après 5 min d'inactivité) et `docker-compose.yml`. Déployé sur Modal le 15/11/2026,
@@ -302,7 +304,9 @@ Plus rien ne bloque l'étape 1.
 - [ ] Secrets dans GitHub Actions uniquement, clés jamais dans le dépôt
 
 ### Tests
-- [ ] Charge (locust ou équivalent) : latence p50 / p95, débit, temps au premier jeton, mémoire GPU
+- [x] Charge (`scripts/load_test.py`, 15/11/2026, A10) : p95 serveur 1,80 s (1 requête) à
+      2,03 s (16 simultanées), débit 0,73 → 8,65 req/s, premier jeton p95 143 ms, mémoire GPU
+      20,0 / 23,0 Go (cache KV). Seuil 3 s tenu ; commit d'audit bloquant trouvé et corrigé
 - [ ] Robustesse : entrées vides ou très longues, injection de prompt, anglais, vLLM indisponible
 - [ ] Comparer vLLM et Transformers seul pour justifier le choix
 - [ ] Limites d'usage, surveillance après déploiement, checklist go / no-go
