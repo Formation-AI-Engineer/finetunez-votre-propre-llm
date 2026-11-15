@@ -237,7 +237,15 @@ class TriageService:
             result.model_answer, result.message = result.message, REFOCUS
             return result
         assessment = parse_assessment(answer)
-        non_standard = assessment is None and (assessment := parse_loose(answer)) is not None
+        # Format attendu : l'évaluation commence par « Niveau de priorité ». Un en-tête trouvé au
+        # milieu d'un texte inventé (démonstration du 15/11 : au 812e caractère, après des
+        # « ## Age : 32 ans ») ne rend pas ce texte présentable : message réécrit, comme sans
+        # en-tête.
+        non_standard = assessment is not None and not answer.lstrip().lower().startswith(
+            "niveau de priorité"
+        )
+        if assessment is None and (assessment := parse_loose(answer)) is not None:
+            non_standard = True
         if non_standard:
             result.alerts.append(NON_STANDARD_FORMAT)
         if assessment is None:
