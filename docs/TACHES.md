@@ -302,12 +302,12 @@ Plus rien ne bloque l'étape 1.
 - [~] Construction et publication de l'image, déploiement automatique sur `main`
       (`.github/workflows/ci.yml`) : qualité → image de l'API construite et testée sans vLLM
       (healthcheck, 401, relais IOA avec plancher des constantes, clés d'audit séparées) →
-      publication GHCR et `modal deploy` sur `main`. Test de fumée vérifié en local ; à valider
-      au premier passage sur GitHub
+      publication GHCR et `modal deploy` sur `main`. Jobs `qualite` et `image` verts sur GitHub
+      (15/11/2026, `dev`) ; publication GHCR et déploiement à valider au premier passage sur `main`
 - [x] Déploiement d'une nouvelle version du modèle par simple changement de révision : lancement
       manuel du workflow avec `model_revision` (40 caractères hexadécimaux, contrôlés)
-- [~] Secrets dans GitHub Actions uniquement, clés jamais dans le dépôt : `MODAL_TOKEN_ID` et
-      `MODAL_TOKEN_SECRET` à créer (jeton Modal dédié à la CI) ; clés de l'API et jeton HF dans
+- [x] Secrets dans GitHub Actions uniquement, clés jamais dans le dépôt : `MODAL_TOKEN_ID` et
+      `MODAL_TOKEN_SECRET` (jeton Modal dédié à la CI, révocable seul), variable `MODAL_API_URL` ; clés de l'API et jeton HF dans
       les secrets Modal, clés locales dans `~/.config/triage-chsa/api.env` (hors dépôt)
 
 ### Tests
