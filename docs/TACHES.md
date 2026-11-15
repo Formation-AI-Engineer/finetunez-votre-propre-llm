@@ -299,11 +299,11 @@ Plus rien ne bloque l'étape 1.
 
 ### CI/CD
 - [ ] Workflow de test étendu : données de test, API avec vLLM simulé
-- [~] Construction et publication de l'image, déploiement automatique sur `main`
+- [x] Construction et publication de l'image, déploiement automatique sur `main`
       (`.github/workflows/ci.yml`) : qualité → image de l'API construite et testée sans vLLM
       (healthcheck, 401, relais IOA avec plancher des constantes, clés d'audit séparées) →
-      publication GHCR et `modal deploy` sur `main`. Jobs `qualite` et `image` verts sur GitHub
-      (15/11/2026, `dev`) ; publication GHCR et déploiement à valider au premier passage sur `main`
+      publication GHCR et `modal deploy` sur `main`. Chaîne complète verte sur `main` le
+      15/11/2026 (PR n° 1) : version Modal v6 déployée par la CI depuis `ac3f25e`
 - [x] Déploiement d'une nouvelle version du modèle par simple changement de révision : lancement
       manuel du workflow avec `model_revision` (40 caractères hexadécimaux, contrôlés)
 - [x] Secrets dans GitHub Actions uniquement, clés jamais dans le dépôt : `MODAL_TOKEN_ID` et
