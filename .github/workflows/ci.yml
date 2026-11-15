@@ -64,6 +64,31 @@ jobs:
           code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/api/v1/audit \
             -H 'X-Audit-Key: ci-key')
           test "$code" = 401 || { echo "audit avec la clé d'API : HTTP $code"; exit 1; }
+      - name: "Test avec un faux vLLM (modèle qui répond DIFFÉRÉE, garde-fou attendu)"
+        run: |
+          docker rm -f api
+          python3 scripts/fake_vllm.py 9000 ci-vllm &
+          docker run -d --name api --network host \
+            -e APP_ENV=prod -e API_KEY=ci-key -e AUDIT_API_KEY=ci-audit \
+            -e VLLM_API_KEY=ci-vllm -e VLLM_BASE_URL=http://127.0.0.1:9000/v1 triage-api:ci
+          for i in $(seq 1 30); do
+            curl -fs http://localhost:8000/api/v1/healthcheck && break; sleep 1
+          done
+          echo
+          curl -fs http://localhost:8000/api/v1/readiness
+          out=$(curl -fs -X POST http://localhost:8000/api/v1/triage -H 'X-API-Key: ci-key' \
+            -H 'Content-Type: application/json' \
+            -d '{"message":"J ai une douleur qui serre la poitrine depuis une heure et je transpire."}')
+          echo "$out"
+          echo "$out" | python3 -c "import json,sys; d=json.load(sys.stdin); \
+            assert d['status']=='evaluation' and d['model_priority']=='differee', d; \
+            assert d['priority']=='maximale' and d['guards'][0]['name']=='drapeau_rouge', d; \
+            assert d['message'].startswith('Niveau de priorité : MAXIMALE'), d"
+          curl -fs http://localhost:8000/api/v1/audit -H 'X-Audit-Key: ci-audit' \
+            | python3 -c "import json,sys; r=json.load(sys.stdin)[-1]; \
+            assert r['priority']=='maximale' and 'DIFFÉRÉE' in r['model_answer'], r"
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/)
+          test "$code" = 200 || { echo "page de démonstration : HTTP $code"; exit 1; }
       - name: Journal du conteneur
         if: always()
         run: docker logs api || true

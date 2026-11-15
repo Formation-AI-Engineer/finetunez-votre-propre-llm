@@ -275,14 +275,15 @@ Plus rien ne bloque l'étape 1.
 - [x] FastAPI : `POST /api/v1/triage`, session de questionnaire adaptatif, authentification par clé
       (`src/triage/api/main.py`, `src/triage/service.py`, client vLLM `src/triage/llm.py`) ;
       8 échanges au plus par session, puis relais à l'IOA ; sessions en mémoire (1 h)
-- [~] Règles de sécurité déterministes : les drapeaux rouges FRENCH (ex. SpO2 < 86 %) forcent la
+- [x] Règles de sécurité déterministes : les drapeaux rouges FRENCH (ex. SpO2 < 86 %) forcent la
       priorité maximale, quel que soit le modèle, puis le niveau du critère FRENCH cité sert de
       plancher (`src/triage/rules.py`, `src/triage/consistency.py`) **(ajout)** : branchées dans
       le service, alerte sur les constantes même pendant une question ou si le modèle est
       indisponible. Drapeaux rouges sur le texte (`src/triage/red_flags.py`, 24 critères FRENCH
       de tri 1-2) : premier jeu 9 → 2/40 pour le DPO (optimiste) ; second jeu de 29 cas neufs
       (`configs/safety_cases_v2.yaml`, commité avant les règles) : 8 → 1/29 pour le DPO,
-      13 → 1/29 pour le SFT, aucune fausse alerte ; effet de la pression isolé : 1 paire sur 5
+      13 → 1/29 pour le SFT, aucune fausse alerte ; effet de la pression isolé : 1 paire sur 5 ;
+      vérifiées sur le déploiement (injection relevée à MAXIMALE, robustesse 20/20)
 - [x] Réponse structurée : statut (question, évaluation, relais IOA), niveau du modèle et niveau
       final, garde-fous déclenchés et leur raison, alertes, avertissement « aide à la décision »
 - [x] Page de démonstration pour la soutenance : `GET /` (`src/triage/api/demo_page.py`) ;
@@ -299,11 +300,13 @@ Plus rien ne bloque l'étape 1.
 - [x] Journal d'audit : horodatage, version du modèle, prompt, réponse, niveau, latence, sans
       donnée directement identifiante (`src/triage/audit.py` : masquage par expressions
       régulières des noms après une formule, téléphones, courriels, NIR, dates ; limite écrite)
-- [~] Route de consultation d'audit protégée et test d'audit de bout en bout : `GET /api/v1/audit`
-      (clé distincte), testée avec un modèle simulé ; reste le test avec vLLM
+- [x] Route de consultation d'audit protégée et test d'audit de bout en bout : `GET /api/v1/audit`
+      (clé distincte), testée avec un modèle simulé, puis avec vLLM sur le déploiement (15/11)
 
 ### CI/CD
-- [ ] Workflow de test étendu : données de test, API avec vLLM simulé
+- [x] Workflow de test étendu : image testée sans vLLM (relais IOA) et avec un faux vLLM au
+      format OpenAI (`scripts/fake_vllm.py`) : modèle qui répond DIFFÉRÉE à une douleur thoracique
+      → drapeau rouge, MAXIMALE, message réécrit, audit ; page de démonstration servie
 - [x] Construction et publication de l'image, déploiement automatique sur `main`
       (`.github/workflows/ci.yml`) : qualité → image de l'API construite et testée sans vLLM
       (healthcheck, 401, relais IOA avec plancher des constantes, clés d'audit séparées) →
