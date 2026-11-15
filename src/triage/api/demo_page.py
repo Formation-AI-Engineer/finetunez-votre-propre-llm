@@ -121,6 +121,10 @@ main { max-width: 1180px; margin: 0 auto; padding: 20px 16px 40px; display: grid
   margin-top: 14px; font-size: 13px; background: var(--ioa-bg); color: var(--ioa); }
 .closed strong { display: block; font-size: 14px; }
 .closed p { margin: 0; color: var(--text); }
+.closed > div { flex: 1; }
+button.warn { background: transparent; color: var(--max); border-color: var(--max); padding: 6px 12px;
+  font-size: 13px; margin-top: 8px; }
+textarea:disabled { opacity: .6; cursor: not-allowed; }
 form.compose { display: flex; gap: 10px; margin-top: 14px; align-items: stretch; }
 textarea, input { font: inherit; color: var(--text); background: var(--soft);
   border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; width: 100%;
@@ -242,8 +246,9 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
     <div class="closed" id="closed" hidden>
       <svg class="i"><use href="#i-nurse"/></svg>
       <div><strong>Questionnaire terminé</strong>
-        <p>L'infirmier ou l'infirmière d'accueil prend le relais. Le champ ci-dessous sert seulement à
-        signaler une aggravation : le niveau peut monter, jamais baisser.</p></div>
+        <p>L'infirmier ou l'infirmière d'accueil prend le relais. Si les symptômes s'aggravent,
+        signalez-le : le niveau peut monter, jamais baisser.</p>
+        <button id="worse" class="warn" type="button"><svg class="i"><use href="#i-triangle"/></svg>Signaler une aggravation</button></div>
     </div>
     <form class="compose" id="compose">
       <textarea id="text" rows="2" maxlength="4000" placeholder="Décrivez ce qui vous amène aux urgences…" required></textarea>
@@ -477,13 +482,23 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
     box.append(meta);
   }
 
+  // Questionnaire terminé : saisie verrouillée. Le bouton « Signaler une aggravation » la
+  // déverrouille pour un seul message (pas de « merci » en boucle, mais l'aggravation reste possible).
+  function lockInput(locked) {
+    $("text").disabled = locked;
+    $("send").disabled = locked;
+    $("text").placeholder = !closed ? PLACEHOLDER : locked ? "Questionnaire terminé"
+      : "Décrivez ce qui s'aggrave (ex. : la douleur augmente, je respire mal)";
+  }
+
   function setClosed(value) {
     closed = value;
     $("closed").hidden = !closed;
     if (!closed) $("note").replaceChildren();
-    $("text").placeholder = closed ? "Signaler une aggravation (ex. : la douleur augmente)" : PLACEHOLDER;
     $("send").lastElementChild.textContent = closed ? "Signaler" : "Envoyer";
     $("reset").className = closed ? "" : "ghost";
+    $("worse").disabled = false;
+    lockInput(closed);
   }
 
   function note(text) {
@@ -492,6 +507,7 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
 
   async function send(ev) {
     ev.preventDefault();
+    if ($("text").disabled) return;  // questionnaire terminé et pas d'aggravation demandée
     const text = $("text").value.trim();
     $("err").textContent = "";
     $("note").replaceChildren();
@@ -567,7 +583,7 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
       $("err").textContent = "Réseau indisponible : " + e.message;
     } finally {
       $("send").disabled = false;
-      $("text").focus();
+      if (closed) lockInput(true); else $("text").focus();
     }
   }
 
@@ -639,6 +655,7 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); $("compose").requestSubmit(); }
   });
   $("reset").addEventListener("click", reset);
+  $("worse").addEventListener("click", () => { lockInput(false); $("text").focus(); });
   $("wake").addEventListener("click", wake);
   $("audit").addEventListener("click", audit);
   setInterval(() => {
