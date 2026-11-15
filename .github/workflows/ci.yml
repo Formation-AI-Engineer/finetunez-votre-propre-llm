@@ -1,9 +1,26 @@
+# Intégration et déploiement continus.
+# - Toute branche / PR : qualité (lint, format, tests), puis image de l'API construite et testée.
+# - main : image publiée sur GHCR, puis déploiement sur Modal (vLLM + API).
+# - Lancement manuel : redéploiement, avec une autre révision du modèle si besoin (40 caractères
+#   hexadécimaux, jamais « main ») : changer de modèle = changer de révision.
+# Secrets (Settings → Secrets and variables → Actions, jamais dans le dépôt) : MODAL_TOKEN_ID,
+# MODAL_TOKEN_SECRET. Variable : MODAL_API_URL (adresse de l'API, pour la vérification finale).
+# Les clés de l'API et le jeton Hugging Face restent dans les secrets Modal.
 name: CI
 
 on:
   push:
     branches: [main, dev]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      model_revision:
+        description: "Révision du modèle (commit Hugging Face, 40 caractères) ; vide = celle du code"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
 
 jobs:
   qualite:
@@ -15,3 +32,86 @@ jobs:
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run pytest
+
+  image:
+    needs: qualite
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construction de l'image de l'API
+        run: docker build -t triage-api:ci .
+      - name: "Test de fumée (sans vLLM, relais à l'IOA attendu)"
+        run: |
+          docker run -d --name api -p 8000:8000 \
+            -e APP_ENV=prod -e API_KEY=ci-key -e AUDIT_API_KEY=ci-audit \
+            -e VLLM_BASE_URL=http://127.0.0.1:9/v1 triage-api:ci
+          for i in $(seq 1 30); do
+            curl -fs http://localhost:8000/api/v1/healthcheck && break; sleep 1
+          done
+          echo
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:8000/api/v1/triage \
+            -H 'Content-Type: application/json' -d '{"message":"J ai mal"}')
+          test "$code" = 401 || { echo "sans clé : HTTP $code au lieu de 401"; exit 1; }
+          out=$(curl -fs -X POST http://localhost:8000/api/v1/triage -H 'X-API-Key: ci-key' \
+            -H 'Content-Type: application/json' \
+            -d '{"message":"J ai du mal à respirer","vitals":{"spo2":84}}')
+          echo "$out"
+          echo "$out" | python3 -c "import json,sys; d=json.load(sys.stdin); \
+            assert d['status']=='relais_ioa' and d['priority']=='maximale', d"
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/api/v1/audit \
+            -H 'X-Audit-Key: ci-key')
+          test "$code" = 401 || { echo "audit avec la clé d'API : HTTP $code"; exit 1; }
+      - name: Journal du conteneur
+        if: always()
+        run: docker logs api || true
+      - name: Publication sur GHCR (main)
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}/triage-api"
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker tag triage-api:ci "$image:${GITHUB_SHA}"
+          docker tag triage-api:ci "$image:latest"
+          docker push "$image:${GITHUB_SHA}"
+          docker push "$image:latest"
+
+  deploy:
+    needs: image
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency:
+      group: deploy-modal
+      cancel-in-progress: false
+    env:
+      MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
+      MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Révision du modèle
+        env:
+          INPUT_REVISION: ${{ github.event.inputs.model_revision }}
+        run: |
+          if [ -n "$INPUT_REVISION" ]; then
+            [[ "$INPUT_REVISION" =~ ^[0-9a-f]{40}$ ]] || {
+              echo "Révision invalide : 40 caractères hexadécimaux attendus"; exit 1; }
+            echo "MODEL_REVISION=$INPUT_REVISION" >> "$GITHUB_ENV"
+            echo "Révision demandée : $INPUT_REVISION"
+          else
+            echo "Révision du code (deploy/modal_app.py)"
+          fi
+      - name: Déploiement sur Modal
+        run: |
+          test -n "$MODAL_TOKEN_ID" || { echo "Secret MODAL_TOKEN_ID absent"; exit 1; }
+          uv tool install modal==1.6.4 --with python-dotenv
+          PYTHONPATH=src modal deploy deploy/modal_app.py
+      - name: Vérification de l'API déployée
+        if: vars.MODAL_API_URL != ''
+        run: |
+          for i in $(seq 1 12); do
+            curl -fs "${{ vars.MODAL_API_URL }}/api/v1/healthcheck" && exit 0; sleep 10
+          done
+          echo "L'API ne répond pas"; exit 1
