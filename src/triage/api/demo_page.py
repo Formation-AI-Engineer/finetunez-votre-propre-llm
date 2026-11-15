@@ -155,6 +155,7 @@ th, td { border-bottom: 1px solid var(--line); padding: 4px; text-align: left; v
   const LABEL = { maximale: "MAXIMALE", moderee: "MODÉRÉE", differee: "DIFFÉRÉE" };
   let sessionId = null;
   let lastContext = "";
+  let lastModelAnswer = 0;  // le GPU s'éteint après 5 min sans requête (scaledown Modal)
 
   const store = {
     get(k) { try { return sessionStorage.getItem(k) || ""; } catch { return ""; } },
@@ -266,6 +267,14 @@ th, td { border-bottom: 1px solid var(--line); padding: 4px; text-align: left; v
       addMsg("agent", d.message, d.status === "evaluation" ? "Évaluation" :
         d.status === "relais_ioa" ? "Relais IOA" : "Question");
       showResult(d);
+      if (d.message.includes("modèle indisponible")) {
+        $("err").textContent = "Le modèle démarre (2 à 3 min) : réessayez quand la pastille est verte.";
+        lastModelAnswer = 0;
+        wake();
+      } else if (d.latency_ms > 0) {
+        lastModelAnswer = Date.now();
+        setModel("ok", "Modèle prêt");
+      }
     } catch (e) {
       $("err").textContent = "Réseau indisponible : " + e.message;
     } finally {
@@ -303,6 +312,7 @@ th, td { border-bottom: 1px solid var(--line); padding: 4px; text-align: left; v
         const r = await fetch("api/v1/readiness");
         if (r.ok) {
           setModel("ok", "Modèle prêt");
+          lastModelAnswer = Date.now();
           break;
         }
       } catch {}
@@ -344,6 +354,12 @@ th, td { border-bottom: 1px solid var(--line); padding: 4px; text-align: left; v
   $("reset").addEventListener("click", reset);
   $("wake").addEventListener("click", wake);
   $("audit").addEventListener("click", audit);
+  setInterval(() => {
+    if (lastModelAnswer && Date.now() - lastModelAnswer > 5 * 60 * 1000 && !waking) {
+      lastModelAnswer = 0;
+      setModel("wait", "Modèle en veille probable");
+    }
+  }, 30000);
   // Pas d'appel au chargement : vérifier l'état réveille le GPU (facturé). Sur clic seulement.
 })();
 </script>
