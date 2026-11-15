@@ -16,6 +16,9 @@ MAX_TOKENS = 320
 # ses tours par <|im_end|>. Sans cet arrêt explicite, vLLM génère jusqu'à MAX_TOKENS (répétitions).
 # Identifiants vérifiés sur le serveur (/tokenize) : <|im_end|> 151645, <|endoftext|> 151643.
 STOP_TOKEN_IDS = [151645, 151643]
+# Au-delà, relais à l'IOA. Réponse la plus lente mesurée : 2,7 s à 16 requêtes simultanées
+# (docs/EVALUATION.md) ; 30 s faisait attendre le patient pendant un démarrage à froid.
+TIMEOUT_SECONDS = 10.0
 
 
 class VLLMClient:
@@ -24,7 +27,7 @@ class VLLMClient:
         base_url: str,
         model_id: str,
         api_key: str | None = None,
-        timeout: float = 30.0,
+        timeout: float = TIMEOUT_SECONDS,
         transport: httpx.BaseTransport | None = None,
     ):
         self.model_id = model_id
