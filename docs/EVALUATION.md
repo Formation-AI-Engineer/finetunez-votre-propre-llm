@@ -717,3 +717,33 @@ Corrections (`src/triage/service.py`, `src/triage/language.py`, 5 tests unitaire
   deux niveaux sont défendables pour cette lombalgie à 5 / 10 ; la frontière 3B / 4 n'est pas
   stable ;
 - le modèle répond aux questions hors sujet (« Canberra ») : sans danger, mais hors du périmètre.
+
+## Démonstration et version v8 (15/11/2026)
+
+L'essai de la page de démonstration (`GET /`) dans un navigateur a révélé deux défauts que les
+tests automatiques ne voyaient pas :
+- **évaluations hors format** : « niveau de priorité maximal (tri FRENCH 2) », « Vous avez besoin
+  d'un niveau de priorité maximale… ». Le service les prenait pour des questions : ni niveau, ni
+  garde-fous. Dans le journal déployé, **21 des 211 réponses classées « question » (10 %)
+  étaient de telles évaluations**. Désormais lues par `parse_loose` (service seulement : la
+  mesure officielle garde le format strict), réécrites au format standard, passées par les
+  garde-fous, avec une alerte « format non standard » pour l'IOA. Même niveau que la lecture
+  stricte sur les 448 évaluations au format ;
+- **réponses inventées après l'évaluation** (« ok merci » → texte en anglais, faux numéro de
+  dossier) : la session est close après l'évaluation ; le niveau rendu est gardé et ne peut que
+  monter (nouvelles constantes, drapeau rouge dans le nouveau message).
+
+Aussi : délai du client vLLM 30 s → 10 s avant le relais IOA (réponse la plus lente mesurée :
+2,7 s) ; pastille d'état du modèle tenue à jour dans la page.
+
+**Nouvelle mesure sur la v8 déployée par la CI** (`25fba61`) :
+- robustesse **20 / 20** ;
+- latence serveur p95 **1,88 s** (1 requête) et **2,03 s** (8 simultanées), 0 relais sur 120 ;
+  premier jeton p50 139 ms.
+
+Effet visible de la lecture de secours : dans le cas « 9e échange » (douleur au genou, réponses
+évasives), le modèle répond dès le 2e échange « Vous avez besoin d'un niveau de priorité
+maximale », avec une justification cardiaque inventée. Auparavant ignorée, cette réponse est
+maintenant affichée et signalée. C'est du **sur-triage du modèle**, dans le sens prudent, rendu
+visible plutôt que corrigé : cette formule semble être sa réponse par défaut quand l'information
+manque (les 21 cas du journal ont la même tournure).
