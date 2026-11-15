@@ -337,3 +337,13 @@ def test_session_is_closed_after_an_evaluation(client):
     ).json()
     assert worse["priority"] == "maximale"
     assert {g["name"] for g in worse["guards"]} >= {"constantes"}
+
+
+def test_demo_page_has_unique_ids():
+    # Une icône `id="chat"` masquait la zone de conversation du même nom (démonstration du 15/11).
+    import re
+
+    from triage.api.demo_page import DEMO_HTML
+
+    ids = re.findall(r'\bid="([^"]+)"', DEMO_HTML)
+    assert len(ids) == len(set(ids))

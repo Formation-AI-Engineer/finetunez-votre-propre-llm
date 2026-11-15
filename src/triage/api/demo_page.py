@@ -33,6 +33,7 @@ DEMO_HTML = r"""<!doctype html>
   }
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { margin: 0; }
 body { background: radial-gradient(1200px 400px at 20% -10%, var(--brand-soft), transparent),
   var(--bg); color: var(--text); min-height: 100vh;
@@ -95,7 +96,7 @@ main { max-width: 1180px; margin: 0 auto; padding: 20px 16px 40px; display: grid
 .bubble.moderee { border-left: 4px solid var(--mod); }
 .bubble.differee { border-left: 4px solid var(--dif); }
 .bubble.relais { border-left: 4px solid var(--ioa); }
-.tag { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700;
+.tag { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700;
   text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 4px; }
 .patient .tag { color: color-mix(in srgb, var(--brand-ink) 75%, transparent); }
 .typing { display: inline-flex; gap: 4px; padding: 14px 16px; }
@@ -194,31 +195,31 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
 </head>
 <body>
 <svg width="0" height="0" style="position: absolute" aria-hidden="true">
-  <symbol id="cross" viewBox="0 0 24 24"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/></symbol>
-  <symbol id="user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></symbol>
-  <symbol id="pulse" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></symbol>
-  <symbol id="shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3.4 8.4-7 10-3.6-1.6-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></symbol>
-  <symbol id="bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21a2 2 0 0 0 4 0"/></symbol>
-  <symbol id="triangle" viewBox="0 0 24 24"><path d="M10.3 4.2 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z"/><path d="M12 9v5M12 17.5h.01"/></symbol>
-  <symbol id="clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
-  <symbol id="check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/></symbol>
-  <symbol id="nurse" viewBox="0 0 24 24"><circle cx="12" cy="9" r="4"/><path d="M5 21c0-3.6 3.1-6 7-6s7 2.4 7 6"/><path d="M12 3.5v3M10.5 5h3"/></symbol>
-  <symbol id="key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3M16 7l3 3"/></symbol>
-  <symbol id="clipboard" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h4"/></symbol>
-  <symbol id="list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></symbol>
-  <symbol id="send" viewBox="0 0 24 24"><path d="M4 12 20 4l-6 16-3-7z"/><path d="m11 13 9-9"/></symbol>
-  <symbol id="plus" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></symbol>
-  <symbol id="power" viewBox="0 0 24 24"><path d="M12 3v8"/><path d="M6.4 6.6a8 8 0 1 0 11.2 0"/></symbol>
-  <symbol id="arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
-  <symbol id="chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
-  <symbol id="chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
-  <symbol id="info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/></symbol>
+  <symbol id="i-cross" viewBox="0 0 24 24"><path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/></symbol>
+  <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3.4 8.4-7 10-3.6-1.6-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-triangle" viewBox="0 0 24 24"><path d="M10.3 4.2 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 4.2a2 2 0 0 0-3.4 0z"/><path d="M12 9v5M12 17.5h.01"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/></symbol>
+  <symbol id="i-nurse" viewBox="0 0 24 24"><circle cx="12" cy="9" r="4"/><path d="M5 21c0-3.6 3.1-6 7-6s7 2.4 7 6"/><path d="M12 3.5v3M10.5 5h3"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3M16 7l3 3"/></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9zM9 12h6M9 16h4"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12 20 4l-6 16-3-7z"/><path d="m11 13 9-9"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v8"/><path d="M6.4 6.6a8 8 0 1 0 11.2 0"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/></symbol>
 </svg>
 
 <header>
   <div class="bar">
     <div class="brand">
-      <div class="logo"><svg class="i"><use href="#cross"/></svg></div>
+      <div class="logo"><svg class="i"><use href="#i-cross"/></svg></div>
       <div>
         <h1>Pré-triage des urgences · CHSA</h1>
         <div class="tagline">Aide à la décision : l'infirmier ou l'infirmière d'accueil valide le niveau.</div>
@@ -226,7 +227,7 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
     </div>
     <div class="status">
       <span id="model" class="pill"><span class="dot"></span><span>Modèle : état inconnu</span></span>
-      <button id="wake" class="btn-light" type="button"><svg class="i"><use href="#power"/></svg>Réveiller le modèle</button>
+      <button id="wake" class="btn-light" type="button"><svg class="i"><use href="#i-power"/></svg>Réveiller le modèle</button>
     </div>
   </div>
 </header>
@@ -234,40 +235,33 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
 <main>
   <section class="card">
     <div class="card-h">
-      <div class="ico blue"><svg class="i"><use href="#chat"/></svg></div>
+      <div class="ico blue"><svg class="i"><use href="#i-chat"/></svg></div>
       <div><h2>Questionnaire patient</h2><div class="sub">Une question à la fois, puis un niveau de priorité FRENCH</div></div>
     </div>
     <div id="chat" aria-live="polite"></div>
     <div class="closed" id="closed" hidden>
-      <svg class="i"><use href="#nurse"/></svg>
+      <svg class="i"><use href="#i-nurse"/></svg>
       <div><strong>Questionnaire terminé</strong>
         <p>L'infirmier ou l'infirmière d'accueil prend le relais. Le champ ci-dessous sert seulement à
         signaler une aggravation : le niveau peut monter, jamais baisser.</p></div>
     </div>
     <form class="compose" id="compose">
       <textarea id="text" rows="2" maxlength="4000" placeholder="Décrivez ce qui vous amène aux urgences…" required></textarea>
-      <button id="send" type="submit"><svg class="i"><use href="#send"/></svg><span>Envoyer</span></button>
+      <button id="send" type="submit"><svg class="i"><use href="#i-send"/></svg><span>Envoyer</span></button>
     </form>
     <div class="note" id="note" aria-live="polite"></div>
     <div class="err" id="err"></div>
     <div class="foot">
       <span class="mono" id="session">Pas de session</span>
-      <button id="reset" class="ghost" type="button"><svg class="i"><use href="#plus"/></svg>Nouveau patient</button>
+      <button id="reset" class="ghost" type="button"><svg class="i"><use href="#i-plus"/></svg>Nouveau patient</button>
     </div>
   </section>
 
   <aside class="side">
-    <section class="card">
-      <div class="card-h">
-        <div class="ico violet"><svg class="i"><use href="#key"/></svg></div>
-        <div><h2>Accès</h2><div class="sub">Gardée dans cet onglet seulement</div></div>
-      </div>
-      <label>Clé d'API <div class="field"><input id="apikey" type="password" autocomplete="off"></div></label>
-    </section>
 
     <section class="card">
       <div class="card-h">
-        <div class="ico teal"><svg class="i"><use href="#clipboard"/></svg></div>
+        <div class="ico teal"><svg class="i"><use href="#i-clipboard"/></svg></div>
         <div><h2>Saisie de l'IOA</h2><div class="sub">Facultatif · envoyée avec le prochain message</div></div>
       </div>
       <div class="grid2">
@@ -287,7 +281,7 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
 
     <section class="card">
       <div class="card-h">
-        <div class="ico blue"><svg class="i"><use href="#pulse"/></svg></div>
+        <div class="ico blue"><svg class="i"><use href="#i-pulse"/></svg></div>
         <div><h2>Dernier résultat</h2><div class="sub">Niveau final après les contrôles de sécurité</div></div>
       </div>
       <div id="result"></div>
@@ -296,14 +290,22 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
     <section class="card">
       <details>
         <summary>
-          <div class="ico amber"><svg class="i"><use href="#list"/></svg></div>
+          <div class="ico amber"><svg class="i"><use href="#i-list"/></svg></div>
           <h2>Journal d'audit</h2>
-          <svg class="i chev"><use href="#chev"/></svg>
+          <svg class="i chev"><use href="#i-chev"/></svg>
         </summary>
         <label style="margin-top: 12px">Clé d'audit <div class="field"><input id="auditkey" type="password" autocomplete="off"></div></label>
         <button id="audit" class="ghost" type="button" style="margin-top: 10px">Afficher la session</button>
         <div id="auditout"></div>
       </details>
+    </section>
+
+    <section class="card">
+      <div class="card-h">
+        <div class="ico violet"><svg class="i"><use href="#i-key"/></svg></div>
+        <div><h2>Accès</h2><div class="sub">Gardée dans cet onglet seulement</div></div>
+      </div>
+      <label>Clé d'API <div class="field"><input id="apikey" type="password" autocomplete="off"></div></label>
     </section>
   </aside>
 </main>
@@ -350,7 +352,7 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
     const s = document.createElementNS(SVG, "svg");
     s.setAttribute("class", "i");
     const u = document.createElementNS(SVG, "use");
-    u.setAttribute("href", "#" + name);
+    u.setAttribute("href", "#i-" + name);  // préfixe : pas de collision avec les id de la page
     s.append(u);
     return s;
   }
@@ -494,7 +496,12 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
     $("err").textContent = "";
     $("note").replaceChildren();
     if (!text) return;
-    if (!$("apikey").value) { $("err").textContent = "Saisissez la clé d'API (panneau Accès)."; return; }
+    if (!$("apikey").value) {
+      $("err").textContent = "Saisissez la clé d'API (panneau Accès, en bas à droite).";
+      $("apikey").scrollIntoView({ behavior: "smooth", block: "center" });
+      $("apikey").focus({ preventScroll: true });
+      return;
+    }
     const body = { message: text };
     if (sessionId) body.session_id = sessionId;
     const ctx = context();
