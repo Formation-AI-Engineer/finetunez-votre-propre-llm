@@ -78,6 +78,9 @@ label input, label textarea { margin-top: 2px; }
 details summary { cursor: pointer; font-weight: 600; }
 table { border-collapse: collapse; width: 100%; font-size: 12px; margin-top: 8px; }
 th, td { border-bottom: 1px solid var(--line); padding: 4px; text-align: left; vertical-align: top; }
+.closed { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-top: 12px;
+  font-size: 13px; background: var(--bg); }
+.closed strong { display: block; }
 .err { color: var(--max); font-size: 13px; margin-top: 6px; min-height: 1em; }
 </style>
 </head>
@@ -97,6 +100,11 @@ th, td { border-bottom: 1px solid var(--line); padding: 4px; text-align: left; v
   <section class="panel">
     <h2>Questionnaire patient</h2>
     <div id="chat" aria-live="polite"><p class="empty">Décrivez ce qui vous amène aux urgences.</p></div>
+    <div class="closed" id="closed" hidden>
+      <strong>Questionnaire terminé</strong>
+      L'infirmier ou l'infirmière d'accueil prend le relais. Le champ ci-dessous sert seulement à
+      signaler une aggravation : le niveau peut monter, jamais baisser.
+    </div>
     <form class="compose" id="compose">
       <textarea id="text" rows="2" maxlength="4000" placeholder="Ex. : J'ai mal au ventre depuis hier soir, surtout en bas à droite." required></textarea>
       <button id="send" type="submit">Envoyer</button>
@@ -155,7 +163,16 @@ th, td { border-bottom: 1px solid var(--line); padding: 4px; text-align: left; v
   const LABEL = { maximale: "MAXIMALE", moderee: "MODÉRÉE", differee: "DIFFÉRÉE" };
   let sessionId = null;
   let lastContext = "";
-  let lastModelAnswer = 0;  // le GPU s'éteint après 5 min sans requête (scaledown Modal)
+  let lastModelAnswer = 0;
+  const PLACEHOLDER = $("text").placeholder;
+
+  function setClosed(closed) {
+    $("closed").hidden = !closed;
+    $("text").placeholder = closed ? "Signaler une aggravation (ex. : la douleur augmente)" : PLACEHOLDER;
+    $("send").dataset.label = closed ? "Signaler" : "Envoyer";
+    $("send").textContent = $("send").dataset.label;
+    $("reset").className = closed ? "" : "ghost";
+  }  // le GPU s'éteint après 5 min sans requête (scaledown Modal)
 
   const store = {
     get(k) { try { return sessionStorage.getItem(k) || ""; } catch { return ""; } },
@@ -267,7 +284,11 @@ th, td { border-bottom: 1px solid var(--line); padding: 4px; text-align: left; v
       addMsg("agent", d.message, d.status === "evaluation" ? "Évaluation" :
         d.status === "relais_ioa" ? "Relais IOA" : "Question");
       showResult(d);
-      if (d.message.includes("modèle indisponible")) {
+      // Session close côté API après une évaluation : on le montre (pas de « merci » en boucle).
+      // Un relais pour modèle indisponible n'est pas une fin : le patient peut réessayer.
+      const unavailable = d.message.includes("modèle indisponible");
+      if (d.status === "evaluation" || (d.status === "relais_ioa" && !unavailable)) setClosed(true);
+      if (unavailable) {
         $("err").textContent = "Le modèle démarre (2 à 3 min) : réessayez quand la pastille est verte.";
         lastModelAnswer = 0;
         wake();
@@ -279,7 +300,7 @@ th, td { border-bottom: 1px solid var(--line); padding: 4px; text-align: left; v
       $("err").textContent = "Réseau indisponible : " + e.message;
     } finally {
       $("send").disabled = false;
-      $("send").textContent = "Envoyer";
+      $("send").textContent = $("send").dataset.label || "Envoyer";
       $("text").focus();
     }
   }
@@ -292,6 +313,7 @@ th, td { border-bottom: 1px solid var(--line); padding: 4px; text-align: left; v
     $("session").textContent = "Pas de session";
     $("auditout").replaceChildren();
     for (const k of ["age", "observation", ...VITALS]) $(k).value = "";
+    setClosed(false);
     $("err").textContent = "";
   }
 
