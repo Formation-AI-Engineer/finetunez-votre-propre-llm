@@ -285,7 +285,10 @@ Plus rien ne bloque l'étape 1.
       13 → 1/29 pour le SFT, aucune fausse alerte ; effet de la pression isolé : 1 paire sur 5
 - [x] Réponse structurée : statut (question, évaluation, relais IOA), niveau du modèle et niveau
       final, garde-fous déclenchés et leur raison, alertes, avertissement « aide à la décision »
-- [ ] Page de démonstration minimale pour la soutenance
+- [~] Page de démonstration pour la soutenance : `GET /` (`src/triage/api/demo_page.py`) ;
+      questionnaire, saisie de l'IOA (âge, constantes, observation), niveau final et niveau du
+      modèle, garde-fous, alertes, journal d'audit de la session ; aucune clé dans la page,
+      réveil du GPU sur clic seulement. À valider dans un navigateur
 - [x] `Dockerfile`, `docker-compose.yml`, versions épinglées, sondes de santé : image de l'API
       construite et testée localement (healthcheck, relais IOA sans vLLM, journal d'audit) ;
       `GET /api/v1/readiness` vérifie vLLM

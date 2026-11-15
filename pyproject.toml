@@ -64,6 +64,9 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
+[tool.ruff.lint.per-file-ignores]
+"src/triage/api/demo_page.py" = ["E501"]  # page HTML embarquée dans une chaîne
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v"
