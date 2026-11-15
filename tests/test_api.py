@@ -160,7 +160,9 @@ def test_vllm_client_sends_no_thinking_and_maps_errors():
 
     client = VLLMClient("http://vllm/v1", "triage-chsa", transport=httpx.MockTransport(handler))
     assert client.complete([{"role": "user", "content": "x"}]) == "ok"
-    assert b'"enable_thinking":false' in seen["body"].replace(b" ", b"")
+    body = seen["body"].replace(b" ", b"")
+    assert b'"enable_thinking":false' in body
+    assert b'"stop_token_ids":[151645,151643]' in body
     down = VLLMClient(
         "http://vllm/v1", "m", transport=httpx.MockTransport(lambda r: httpx.Response(503))
     )

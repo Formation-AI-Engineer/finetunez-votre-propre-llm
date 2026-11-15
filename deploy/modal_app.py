@@ -1,11 +1,11 @@
-"""Démonstration sur Modal : serveur vLLM (GPU L4) et API FastAPI (CPU), deux fonctions.
+"""Démonstration sur Modal : serveur vLLM (GPU L4, A10G en secours) et API FastAPI (CPU), deux fonctions.
 
 Préalables (une fois) :
   uv tool install modal==1.6.4 && modal token new
   modal secret create triage-chsa-hf HF_TOKEN=<jeton en lecture du dépôt privé>
   modal secret create triage-chsa-api API_KEY=<…> AUDIT_API_KEY=<…> VLLM_API_KEY=<…> \
       VLLM_BASE_URL=https://<espace>--triage-chsa-vllm.modal.run/v1
-Déploiement : modal deploy deploy/modal_app.py (MODEL_REVISION pour une autre révision)
+Déploiement : PYTHONPATH=src modal deploy deploy/modal_app.py (MODEL_REVISION pour une autre révision)
 
 Coûts : le GPU s'éteint après 5 minutes sans requête (scaledown_window) ; aucun conteneur ne
 tourne au repos. Le premier appel après l'arrêt attend le chargement du modèle (environ 1 à
@@ -36,13 +36,15 @@ audit_volume = modal.Volume.from_name("triage-chsa-audit", create_if_missing=Tru
 vllm_image = (
     modal.Image.from_registry(VLLM_IMAGE)
     .entrypoint([])
+    # L'image n'a que `python3` ; Modal cherche `python` pour détecter la version.
+    .run_commands("ln -sf /usr/bin/python3 /usr/bin/python")
     .env({"HF_HUB_ENABLE_HF_TRANSFER": "0", "MODEL_ID": MODEL_ID, "MODEL_REVISION": MODEL_REVISION})
 )
 
 
 @app.function(
     image=vllm_image,
-    gpu="L4",
+    gpu=["L4", "A10G"],  # A10G si aucun L4 libre (24 Go, même ordre de coût)
     secrets=[modal.Secret.from_name("triage-chsa-hf"), modal.Secret.from_name("triage-chsa-api")],
     volumes={"/root/.cache/huggingface": hf_cache},
     scaledown_window=300,

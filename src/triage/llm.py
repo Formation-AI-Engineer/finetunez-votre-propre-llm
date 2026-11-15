@@ -2,7 +2,7 @@
 
 Mêmes réglages de génération qu'à l'évaluation (scripts/evaluate.py) : décodage glouton, au plus
 320 jetons, mode sans raisonnement (`enable_thinking=False`, bloc <think></think> vide comme à
-l'entraînement).
+l'entraînement), arrêt sur <|im_end|> ou <|endoftext|>.
 """
 
 from __future__ import annotations
@@ -12,6 +12,10 @@ import httpx
 from triage.service import ModelUnavailable
 
 MAX_TOKENS = 320
+# Le tokenizer hérite du modèle de base (fin de séquence <|endoftext|>) ; le modèle affiné termine
+# ses tours par <|im_end|>. Sans cet arrêt explicite, vLLM génère jusqu'à MAX_TOKENS (répétitions).
+# Identifiants vérifiés sur le serveur (/tokenize) : <|im_end|> 151645, <|endoftext|> 151643.
+STOP_TOKEN_IDS = [151645, 151643]
 
 
 class VLLMClient:
@@ -36,6 +40,7 @@ class VLLMClient:
             "temperature": 0,
             "max_tokens": MAX_TOKENS,
             "chat_template_kwargs": {"enable_thinking": False},
+            "stop_token_ids": STOP_TOKEN_IDS,
         }
         try:
             response = self._http.post("/chat/completions", json=payload)

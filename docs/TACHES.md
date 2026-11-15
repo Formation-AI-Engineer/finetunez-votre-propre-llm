@@ -261,9 +261,15 @@ Plus rien ne bloque l'étape 1.
 
 ### Service
 - [ ] Choisir le fournisseur GPU et noter le coût
-- [~] Conteneur vLLM (`vllm serve`, modèle fusionné) et test de l'API au format OpenAI :
-      `deploy/modal_app.py` (vLLM 0.32.0 sur L4, révision du modèle fixée, arrêt après 5 min
-      d'inactivité) et `docker-compose.yml` ; à déployer après la publication des poids
+- [x] Conteneur vLLM (`vllm serve`, modèle fusionné) et test de l'API au format OpenAI :
+      `deploy/modal_app.py` (vLLM 0.32.0 sur L4, A10G en secours, révision du modèle fixée,
+      arrêt après 5 min d'inactivité) et `docker-compose.yml`. Déployé sur Modal le 15/11/2026,
+      test de bout en bout réussi (questionnaire 3 tours, douleur thoracique → MAXIMALE 2, 401
+      sans clé, relais IOA pendant un redémarrage de vLLM, audit 401 avec la clé d'API).
+      **Correctif** : le tokenizer hérite de la fin de séquence du modèle de base
+      (<|endoftext|>) ; sans `stop_token_ids` sur <|im_end|>, vLLM générait jusqu'à 320 jetons
+      (répétitions, 3 s fixes). Limite observée : justifications parfois peu fluides
+      (mots inventés), niveaux corrects
 - [x] FastAPI : `POST /api/v1/triage`, session de questionnaire adaptatif, authentification par clé
       (`src/triage/api/main.py`, `src/triage/service.py`, client vLLM `src/triage/llm.py`) ;
       8 échanges au plus par session, puis relais à l'IOA ; sessions en mémoire (1 h)
