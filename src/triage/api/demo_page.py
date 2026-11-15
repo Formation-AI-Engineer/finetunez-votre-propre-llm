@@ -230,7 +230,7 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
       </div>
     </div>
     <div class="status">
-      <span id="model" class="pill"><span class="dot"></span><span>Modèle : état inconnu</span></span>
+      <span id="model" class="pill"><span class="dot"></span><span>Modèle non vérifié</span></span>
       <button id="wake" class="btn-light" type="button"><svg class="i"><use href="#i-power"/></svg>Réveiller le modèle</button>
     </div>
   </div>
@@ -332,6 +332,7 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
   let sessionId = null;
   let lastContext = "";
   let lastModelAnswer = 0;  // le GPU s'éteint après 5 min sans requête (scaledown Modal)
+  const IDLE_MS = 5 * 60 * 1000;
   let closed = false;
   let closedPriority = null;
   let waking = false;
@@ -572,10 +573,10 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
       }
       if (unavailable) {
         $("err").textContent = "Le modèle démarre (2 à 3 min) : réessayez quand la pastille est verte.";
-        lastModelAnswer = 0;
+        markAnswer(0);
         wake();
       } else if (d.latency_ms > 0) {
-        lastModelAnswer = Date.now();
+        markAnswer();
         setModel("ok", "Modèle prêt");
       }
     } catch (e) {
@@ -600,6 +601,13 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
     setClosed(false);
   }
 
+  // Dernière réponse du modèle, gardée dans l'onglet : après un rechargement, on sait sans
+  // interroger vLLM (ce qui réveillerait le GPU) s'il tourne encore.
+  function markAnswer(t = Date.now()) {
+    lastModelAnswer = t;
+    store.set("lastModelAnswer", String(t));
+  }
+
   function setModel(state, text) {
     $("model").className = "pill " + state;
     $("model").lastElementChild.textContent = text;
@@ -616,7 +624,7 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
         const r = await fetch("api/v1/readiness");
         if (r.ok) {
           setModel("ok", "Modèle prêt");
-          lastModelAnswer = Date.now();
+          markAnswer();
           break;
         }
       } catch {}
@@ -659,12 +667,19 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
   $("wake").addEventListener("click", wake);
   $("audit").addEventListener("click", audit);
   setInterval(() => {
-    if (lastModelAnswer && Date.now() - lastModelAnswer > 5 * 60 * 1000 && !waking) {
-      lastModelAnswer = 0;
+    if (lastModelAnswer && Date.now() - lastModelAnswer > IDLE_MS && !waking) {
+      markAnswer(0);
       setModel("wait", "Modèle en veille probable");
     }
   }, 30000);
   // Pas d'appel au chargement : vérifier l'état réveille le GPU (facturé). Sur clic seulement.
+  const seen = Number(store.get("lastModelAnswer")) || 0;
+  if (seen && Date.now() - seen < IDLE_MS) {
+    lastModelAnswer = seen;
+    setModel("ok", "Modèle prêt");
+  } else {
+    setModel("", "Modèle en veille ? Cliquez sur Réveiller");
+  }
   welcome();
   emptyResult();
 })();
