@@ -285,7 +285,12 @@ Plus rien ne bloque l'étape 1.
       13 → 1/29 pour le SFT, aucune fausse alerte ; effet de la pression isolé : 1 paire sur 5
 - [x] Réponse structurée : statut (question, évaluation, relais IOA), niveau du modèle et niveau
       final, garde-fous déclenchés et leur raison, alertes, avertissement « aide à la décision »
-- [ ] Page de démonstration minimale pour la soutenance
+- [x] Page de démonstration pour la soutenance : `GET /` (`src/triage/api/demo_page.py`) ;
+      questionnaire, saisie de l'IOA (âge, constantes, observation), niveau final et niveau du
+      modèle, garde-fous, alertes, journal d'audit de la session ; aucune clé dans la page,
+      réveil du GPU sur clic seulement. Validée dans un navigateur le 15/11/2026 ; l'essai a révélé
+      des évaluations hors format non lues (21 / 211 « questions » du journal) et des réponses
+      inventées après l'évaluation : corrigés (lecture de secours, session close)
 - [x] `Dockerfile`, `docker-compose.yml`, versions épinglées, sondes de santé : image de l'API
       construite et testée localement (healthcheck, relais IOA sans vLLM, journal d'audit) ;
       `GET /api/v1/readiness` vérifie vLLM
@@ -299,15 +304,15 @@ Plus rien ne bloque l'étape 1.
 
 ### CI/CD
 - [ ] Workflow de test étendu : données de test, API avec vLLM simulé
-- [~] Construction et publication de l'image, déploiement automatique sur `main`
+- [x] Construction et publication de l'image, déploiement automatique sur `main`
       (`.github/workflows/ci.yml`) : qualité → image de l'API construite et testée sans vLLM
       (healthcheck, 401, relais IOA avec plancher des constantes, clés d'audit séparées) →
-      publication GHCR et `modal deploy` sur `main`. Test de fumée vérifié en local ; à valider
-      au premier passage sur GitHub
+      publication GHCR et `modal deploy` sur `main`. Chaîne complète verte sur `main` le
+      15/11/2026 (PR n° 1) : version Modal v6 déployée par la CI depuis `ac3f25e`
 - [x] Déploiement d'une nouvelle version du modèle par simple changement de révision : lancement
       manuel du workflow avec `model_revision` (40 caractères hexadécimaux, contrôlés)
-- [~] Secrets dans GitHub Actions uniquement, clés jamais dans le dépôt : `MODAL_TOKEN_ID` et
-      `MODAL_TOKEN_SECRET` à créer (jeton Modal dédié à la CI) ; clés de l'API et jeton HF dans
+- [x] Secrets dans GitHub Actions uniquement, clés jamais dans le dépôt : `MODAL_TOKEN_ID` et
+      `MODAL_TOKEN_SECRET` (jeton Modal dédié à la CI, révocable seul), variable `MODAL_API_URL` ; clés de l'API et jeton HF dans
       les secrets Modal, clés locales dans `~/.config/triage-chsa/api.env` (hors dépôt)
 
 ### Tests

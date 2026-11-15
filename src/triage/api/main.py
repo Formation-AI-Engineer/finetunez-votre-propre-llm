@@ -1,5 +1,6 @@
 """API de pré-triage du CHSA.
 
+- `GET /` : page de démonstration (sans clé ; la clé d'API se saisit dans la page) ;
 - `GET /api/v1/healthcheck` : vivacité de l'API (sans clé) ;
 - `GET /api/v1/readiness` : le serveur du modèle répond-il ? (sans clé) ;
 - `POST /api/v1/triage` : un tour de questionnaire (clé `X-API-Key`). Sans `session_id`, ouvre une
@@ -16,9 +17,11 @@ from functools import cache
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, ConfigDict, Field
 
 from triage import __version__
+from triage.api.demo_page import DEMO_HTML
 from triage.audit import AuditLog
 from triage.config import settings
 from triage.data.schema import Vitals
@@ -85,6 +88,11 @@ def require_api_key(x_api_key: Annotated[str | None, Header()] = None) -> None:
 
 def require_audit_key(x_audit_key: Annotated[str | None, Header()] = None) -> None:
     _check_key(x_audit_key, settings.audit_api_key, "change-me-audit")
+
+
+@app.get("/", response_class=HTMLResponse, include_in_schema=False)
+def demo() -> str:
+    return DEMO_HTML
 
 
 @app.get("/api/v1/healthcheck")

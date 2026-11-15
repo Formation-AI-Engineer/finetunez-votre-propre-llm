@@ -41,3 +41,35 @@ def parse_assessment(text: str) -> Assessment | None:
         order = ("maximale", "moderee", "differee")
         priority = min(priority, FRENCH_TO_PRIORITY[level], key=order.index)
     return Assessment(priority=priority, french_level=level)
+
+
+_LOOSE_LEVEL = re.compile(r"tri\s+FRENCH\s*:?\s*(1|2|3A|3B|4|5)\b", re.IGNORECASE)
+_LOOSE_PRIORITY = re.compile(
+    r"priorit[ée]\s*:?\s*(?:est\s+)?(maximale?|mod[ée]r[ée]e?|diff[ée]r[ée]e?)\b", re.IGNORECASE
+)
+
+
+def parse_loose(text: str) -> Assessment | None:
+    """Lecture de secours, pour le service seulement : niveau annoncé hors du format attendu
+    (« niveau de priorité maximal (tri FRENCH 2) », vu en démonstration le 15/11/2026).
+
+    L'évaluation et le jeu de sécurité gardent le format strict (`parse_assessment`) : un format
+    non respecté y compte comme une erreur, et les métriques publiées restent comparables.
+    """
+    level_match = _LOOSE_LEVEL.search(text)
+    priority_match = _LOOSE_PRIORITY.search(text)
+    if not level_match and not priority_match:
+        return None
+    level = level_match.group(1).upper() if level_match else None
+    candidates = [FRENCH_TO_PRIORITY[level]] if level else []
+    if priority_match:
+        word = priority_match.group(1).lower()
+        candidates.append(
+            "maximale"
+            if word.startswith("max")
+            else "moderee"
+            if word.startswith("mod")
+            else "differee"
+        )
+    order = ("maximale", "moderee", "differee")
+    return Assessment(priority=min(candidates, key=order.index), french_level=level)

@@ -272,3 +272,68 @@ def test_red_flag_during_a_question_raises_an_alert(client):
     ).json()
     assert out["status"] == "question" and out["priority"] is None
     assert any(a.startswith("Drapeau rouge") for a in out["alerts"])
+
+
+def test_demo_page_is_served_without_key_and_holds_no_secret():
+    page = TestClient(main.app).get("/")
+    assert page.status_code == 200 and "text/html" in page.headers["content-type"]
+    assert 'fetch("api/v1/triage"' in page.text and "X-API-Key" in page.text
+    assert settings.api_key not in page.text and settings.audit_api_key not in page.text
+    assert "innerHTML" not in page.text  # texte du modèle inséré comme texte, jamais comme HTML
+
+
+@pytest.mark.parametrize(
+    ("text", "priority", "level"),
+    [
+        (
+            "Votre situation semble urgente : niveau de priorité maximal (tri FRENCH 2).",
+            "maximale",
+            "2",
+        ),
+        (
+            "Vous avez besoin d'un niveau de priorité maximale. Une mauvaise circulation…",
+            "maximale",
+            None,
+        ),
+        ("La priorité est modérée, tri FRENCH 4.", "moderee", "4"),  # le plus grave des deux
+        (
+            "Je vais vous aider à évaluer votre niveau de priorité. Avez-vous de la fièvre ?",
+            None,
+            None,
+        ),
+    ],
+)
+def test_parse_loose(text, priority, level):
+    from triage.output import parse_loose
+
+    found = parse_loose(text)
+    assert (found.priority, found.french_level) == (priority, level) if priority else found is None
+
+
+def test_non_standard_evaluation_is_read_rewritten_and_flagged(client):
+    api, _ = client("Votre situation semble urgente : niveau de priorité maximal (tri FRENCH 2).")
+    out = api.post("/api/v1/triage", json={"message": "Diarrhée abondante depuis ce matin."}).json()
+    assert out["status"] == "evaluation" and out["priority"] == "maximale"
+    assert out["message"].startswith("Niveau de priorité : MAXIMALE (tri FRENCH 2)")
+    assert any("format non standard" in a for a in out["alerts"])
+
+
+def test_session_is_closed_after_an_evaluation(client):
+    # Démonstration du 15/11 : « ok merci » après l'évaluation → texte inventé en anglais.
+    api, service = client(evaluation("MODÉRÉE", "3B"))
+    first = api.post("/api/v1/triage", json={"message": "Mal au ventre depuis hier."}).json()
+    sid = first["session_id"]
+    out = api.post("/api/v1/triage", json={"message": "ok merci", "session_id": sid}).json()
+    assert out["status"] == "relais_ioa" and out["priority"] == "moderee"
+    assert "L'évaluation est terminée" in out["message"]
+    assert len(service.model.calls) == 1  # pas de second appel au modèle
+    worse = api.post(
+        "/api/v1/triage",
+        json={
+            "message": "Ça serre dans la poitrine maintenant.",
+            "session_id": sid,
+            "vitals": {"spo2": 84},
+        },
+    ).json()
+    assert worse["priority"] == "maximale"
+    assert {g["name"] for g in worse["guards"]} >= {"constantes"}

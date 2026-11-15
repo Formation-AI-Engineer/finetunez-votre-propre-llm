@@ -15,6 +15,14 @@ Robustesse (tests sur le déploiement du 15/11/2026) :
   texte du modèle reste dans le journal d'audit (`model_answer`) ;
 - un message en anglais part à l'IOA sans appel au modèle (triage validé en français seulement) ;
 - une réponse qui recopie le prompt système est remplacée par une demande de recentrage.
+
+Démonstration (15/11/2026) :
+- une évaluation hors du format attendu (« niveau de priorité maximal (tri FRENCH 2) ») est lue
+  par `parse_loose`, réécrite au format standard, et passe par les garde-fous ; alerte à l'IOA ;
+- après une évaluation, la session est close : le modèle, qui n'a jamais vu de suite à une
+  évaluation à l'entraînement, inventait une réponse (« ok merci » → texte en anglais, faux numéro
+  de dossier). Les messages suivants reçoivent une réponse fixe ; le niveau rendu est gardé, et
+  ne peut que monter (nouvelles constantes, drapeau rouge dans le nouveau message).
 """
 
 from __future__ import annotations
@@ -29,7 +37,7 @@ from typing import Literal, Protocol
 from triage.consistency import cited_criterion
 from triage.data.schema import FRENCH_TO_PRIORITY, PriorityLevel, Vitals
 from triage.language import is_english
-from triage.output import parse_assessment
+from triage.output import parse_assessment, parse_loose
 from triage.prompts import SYSTEM_PROMPT
 from triage.red_flags import red_flag_floor
 from triage.rules import vital_alerts, vital_floor
@@ -46,6 +54,11 @@ ENGLISH_HANDOVER = (
     "Un infirmier ou une infirmière d'accueil va évaluer votre situation directement. "
     "A triage nurse will assess you directly."
 )
+AFTER_EVALUATION = (
+    "L'évaluation est terminée : l'infirmier ou l'infirmière d'accueil prend le relais. "
+    "Signalez tout de suite à l'accueil si vos symptômes changent ou s'aggravent."
+)
+NON_STANDARD_FORMAT = "Évaluation au format non standard : niveau lu dans le texte du modèle"
 REFOCUS = (
     "Je ne peux pas répondre à cette demande. Pouvez-vous me décrire ce qui vous amène aux "
     "urgences ?"
@@ -59,16 +72,19 @@ def leaks_system_prompt(answer: str) -> bool:
     return any(sentence in flat for sentence in _SYSTEM_SENTENCES)
 
 
-def guarded_message(priority: str, level: str, guards: list[Guard]) -> str:
-    """Message d'évaluation réécrit quand un garde-fou a relevé le niveau du modèle."""
-    reasons = " ; ".join(g.reason for g in guards)
-    return (
-        f"Niveau de priorité : {PRIORITY_LABEL[priority]} (tri FRENCH {level})\n"
-        f"Niveau relevé par un contrôle de sécurité : {reasons}.\n"
-        f"Explication : {EXPLANATION[priority]}\n"
-        f"Conduite proposée : {ORIENTATION[level]}\n"
-        f"{DISCLAIMER}"
-    )
+def guarded_message(priority: str, level: str | None, guards: list[Guard]) -> str:
+    """Message d'évaluation au format standard, réécrit quand un garde-fou a relevé le niveau du
+    modèle ou quand le modèle n'a pas suivi le format."""
+    header = f"Niveau de priorité : {PRIORITY_LABEL[priority]}"
+    lines = [f"{header} (tri FRENCH {level})" if level else header]
+    if guards:
+        reasons = " ; ".join(g.reason for g in guards)
+        lines.append(f"Niveau relevé par un contrôle de sécurité : {reasons}.")
+    lines.append(f"Explication : {EXPLANATION[priority]}")
+    if level:
+        lines.append(f"Conduite proposée : {ORIENTATION[level]}")
+    lines.append(DISCLAIMER)
+    return "\n".join(lines)
 
 
 class ModelUnavailable(RuntimeError):
@@ -112,6 +128,7 @@ class Session:
     age_years: float | None = None
     vitals: Vitals | None = None
     turns: int = 0
+    final: tuple[PriorityLevel, str | None] | None = None  # niveau rendu : session close
 
 
 def _number(x: float) -> str:
@@ -192,6 +209,8 @@ class TriageService:
         alerts = [a.reason for a in vital_alerts(session.vitals, session.age_years)]
         result = TriageResult(sid, "question", "", alerts=alerts, model_id=self.model.model_id)
 
+        if session.final is not None:
+            return self._after_evaluation(result, session, text)
         if session.turns >= MAX_TURNS:
             return self._handover(result, session, "nombre maximal d'échanges atteint")
         if is_english(text):
@@ -218,6 +237,9 @@ class TriageService:
             result.model_answer, result.message = result.message, REFOCUS
             return result
         assessment = parse_assessment(answer)
+        non_standard = assessment is None and (assessment := parse_loose(answer)) is not None
+        if non_standard:
+            result.alerts.append(NON_STANDARD_FORMAT)
         if assessment is None:
             # Question de recueil : pas de niveau. Une constante critique ou un drapeau rouge
             # dans le récit restent signalés à l'IOA.
@@ -245,9 +267,30 @@ class TriageService:
             reason = f"{hit.name} (« {hit.excerpt} ») : {hit.motif}, tri {hit.level}"
             result.guards.append(Guard("drapeau_rouge", reason, hit.level))
         result.priority, result.french_level = priority, level
-        if result.guards:
+        session.final = (priority, level)
+        if result.guards or non_standard:
             result.model_answer = result.message
             result.message = guarded_message(priority, level, result.guards)
+        return result
+
+    def _after_evaluation(self, result: TriageResult, session: Session, text: str) -> TriageResult:
+        """Message après l'évaluation : pas d'appel au modèle ; le niveau rendu est gardé et ne
+        peut que monter (constantes, drapeau rouge dans le nouveau message)."""
+        result.status = "relais_ioa"
+        result.turn = session.turns
+        result.message = AFTER_EVALUATION
+        priority, level = session.final
+        floor = vital_floor(session.vitals, session.age_years)
+        if floor and _rank(FRENCH_TO_PRIORITY[floor.level]) < _rank(priority):
+            priority, level = FRENCH_TO_PRIORITY[floor.level], floor.level
+            result.guards.append(Guard("constantes", floor.reason, floor.level))
+        hit = red_flag_floor(text, session.age_years)
+        if hit and _rank(FRENCH_TO_PRIORITY[hit.level]) < _rank(priority):
+            priority, level = FRENCH_TO_PRIORITY[hit.level], hit.level
+            reason = f"{hit.name} (« {hit.excerpt} ») : {hit.motif}, tri {hit.level}"
+            result.guards.append(Guard("drapeau_rouge", reason, hit.level))
+        session.final = (priority, level)
+        result.priority, result.french_level = priority, level
         return result
 
     def _handover(self, result: TriageResult, session: Session, why: str) -> TriageResult:
