@@ -112,6 +112,10 @@ facultatifs : `age_years`, `vitals` (`heart_rate`, `systolic_bp`, `diastolic_bp`
 l'IOA). La réponse donne le niveau retenu (`priority`), celui du modèle (`model_priority`), les
 garde-fous déclenchés (`guards`) et les alertes pour l'IOA (`alerts`).
 
+Après l'évaluation, la session est close. Un message envoyé avec `"aggravation": true` est
+réévalué par le modèle, et le niveau rendu ne peut que monter. Sans ce drapeau, un message ne
+peut relever le niveau que par les règles (constantes, drapeaux rouges).
+
 ## 4. Lancer le vrai modèle sur sa machine (GPU)
 
 Ce mode demande un GPU NVIDIA avec le NVIDIA Container Toolkit, et l'accès au dépôt privé des

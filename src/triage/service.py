@@ -23,6 +23,16 @@ Démonstration (15/11/2026) :
   évaluation à l'entraînement, inventait une réponse (« ok merci » → texte en anglais, faux numéro
   de dossier). Les messages suivants reçoivent une réponse fixe ; le niveau rendu est gardé, et
   ne peut que monter (nouvelles constantes, drapeau rouge dans le nouveau message).
+
+Aggravation (16/11/2026) : un message marqué `aggravation` après l'évaluation est réévalué par le
+modèle. Pour rester dans une forme apprise, le modèle reçoit la conversation d'origine sans son
+évaluation, l'aggravation ajoutée à la dernière réponse du patient : un récit (un seul message)
+ou un dialogue (question clé puis réponse). Envoyer le récit seul, sans la question déjà posée,
+lui faisait reposer cette question (test sur le vrai modèle du 16/11).
+Le niveau rendu ne peut que monter : un niveau plus bas que le précédent est ignoré
+(garde-fou `niveau_precedent`). Si le modèle ne rend pas d'évaluation ou ne répond pas, ce sont
+les règles seules (constantes, drapeaux rouges) qui s'appliquent, comme avant. Au plus
+`MAX_REASSESSMENTS` réévaluations par session.
 """
 
 from __future__ import annotations
@@ -49,6 +59,8 @@ DISCLAIMER = (
     "niveau de tri."
 )
 MAX_TURNS = 8  # échanges patient-agent par session ; au-delà, l'IOA prend le relais
+MAX_REASSESSMENTS = 3  # réévaluations par le modèle après un signalement d'aggravation
+AGGRAVATION_LINK = "Depuis, mon état s'aggrave :"
 SESSION_TTL_SECONDS = 3600
 ENGLISH_HANDOVER = (
     "Un infirmier ou une infirmière d'accueil va évaluer votre situation directement. "
@@ -99,7 +111,7 @@ class ChatModel(Protocol):
 
 @dataclass
 class Guard:
-    name: Literal["constantes", "coherence", "drapeau_rouge"]
+    name: Literal["constantes", "coherence", "drapeau_rouge", "niveau_precedent"]
     reason: str
     french_level: str
 
@@ -129,6 +141,8 @@ class Session:
     vitals: Vitals | None = None
     turns: int = 0
     final: tuple[PriorityLevel, str | None] | None = None  # niveau rendu : session close
+    story: list[str] = field(default_factory=list)  # messages du patient, bruts
+    reassessments: int = 0
 
 
 def _number(x: float) -> str:
@@ -176,6 +190,14 @@ def _rank(priority: str) -> int:
     return PRIORITIES.index(priority)
 
 
+_FRENCH_LEVELS = ("1", "2", "3A", "3B", "4", "5")
+
+
+def _severity(priority: str, level: str | None) -> tuple[int, int]:
+    """Ordre de gravité, priorité puis tri FRENCH (un tri absent compte comme le moins grave)."""
+    return _rank(priority), _FRENCH_LEVELS.index(level) if level else len(_FRENCH_LEVELS)
+
+
 class TriageService:
     def __init__(self, model: ChatModel, clock: Callable[[], float] = time.monotonic):
         self.model = model
@@ -202,6 +224,7 @@ class TriageService:
         age_years: float | None = None,
         vitals: Vitals | None = None,
         observation: str | None = None,
+        aggravation: bool = False,
     ) -> TriageResult:
         sid, session = self._session(session_id)
         session.age_years = age_years if age_years is not None else session.age_years
@@ -210,6 +233,8 @@ class TriageService:
         result = TriageResult(sid, "question", "", alerts=alerts, model_id=self.model.model_id)
 
         if session.final is not None:
+            if aggravation and session.reassessments < MAX_REASSESSMENTS and not is_english(text):
+                return self._reassess(result, session, text, observation)
             return self._after_evaluation(result, session, text)
         if session.turns >= MAX_TURNS:
             return self._handover(result, session, "nombre maximal d'échanges atteint")
@@ -227,6 +252,7 @@ class TriageService:
             session.messages.pop()
             return self._handover(result, session, "modèle indisponible")
         result.latency_ms = round((self.clock() - start) * 1000)
+        session.story.append(text.strip())
         session.messages.append({"role": "assistant", "content": answer})
         session.turns += 1
         result.turn = session.turns
@@ -256,6 +282,21 @@ class TriageService:
                     f"Drapeau rouge : {hit.name} (« {hit.excerpt} »), {hit.motif}, tri {hit.level}"
                 )
             return result
+        self._evaluate(result, session, answer, assessment, story, non_standard)
+        return result
+
+    def _evaluate(
+        self,
+        result: TriageResult,
+        session: Session,
+        answer: str,
+        assessment,
+        story: str,
+        non_standard: bool,
+        previous: tuple[PriorityLevel, str | None] | None = None,
+    ) -> None:
+        """Niveau final d'une évaluation du modèle : garde-fous, puis niveau déjà rendu (qui ne
+        peut pas baisser), puis message réécrit si le niveau ou le format a changé."""
         result.status = "evaluation"
         result.model_priority = assessment.priority
         priority, level = assessment.priority, assessment.french_level
@@ -274,11 +315,56 @@ class TriageService:
             priority, level = FRENCH_TO_PRIORITY[hit.level], hit.level
             reason = f"{hit.name} (« {hit.excerpt} ») : {hit.motif}, tri {hit.level}"
             result.guards.append(Guard("drapeau_rouge", reason, hit.level))
+        if previous and _severity(*previous) < _severity(priority, level):
+            priority, level = previous
+            reason = f"niveau déjà rendu, {PRIORITY_LABEL[priority]}" + (
+                f" (tri {level})" if level else ""
+            )
+            result.guards.append(
+                Guard("niveau_precedent", reason + ", qui ne peut pas baisser", level or "")
+            )
         result.priority, result.french_level = priority, level
         session.final = (priority, level)
         if result.guards or non_standard:
             result.model_answer = result.message
             result.message = guarded_message(priority, level, result.guards)
+
+    def _reassess(
+        self, result: TriageResult, session: Session, text: str, observation: str | None
+    ) -> TriageResult:
+        """Aggravation signalée après l'évaluation : le modèle réévalue la conversation, sans son
+        évaluation, l'aggravation ajoutée à la dernière réponse du patient. Repli sur les règles
+        seules si le modèle ne répond pas ou ne rend pas d'évaluation."""
+        last = f"{session.story[-1]} {AGGRAVATION_LINK} {text.strip()}"
+        user = render_turn(last, session.age_years, session.vitals, observation)
+        messages = [*session.messages[:-2], {"role": "user", "content": user}]
+        story = " ".join([*session.story[:-1], last])
+        start = self.clock()
+        try:
+            answer = self.model.complete(messages)
+        except ModelUnavailable:
+            return self._after_evaluation(result, session, text)
+        result.latency_ms = round((self.clock() - start) * 1000)
+        session.reassessments += 1
+        session.turns += 1
+        result.turn = session.turns
+        assessment = parse_assessment(answer)
+        non_standard = assessment is not None and not answer.lstrip().lower().startswith(
+            "niveau de priorité"
+        )
+        if assessment is None and (assessment := parse_loose(answer)) is not None:
+            non_standard = True
+        if assessment is None or leaks_system_prompt(answer):
+            fallback = self._after_evaluation(result, session, text)
+            fallback.model_answer = answer.strip()
+            fallback.alerts.append("Réévaluation sans niveau lisible : règles seules appliquées")
+            return fallback
+        session.story[-1] = last
+        session.messages = [*messages, {"role": "assistant", "content": answer}]
+        if non_standard:
+            result.alerts.append(NON_STANDARD_FORMAT)
+        result.message = answer.strip()
+        self._evaluate(result, session, answer, assessment, story, non_standard, session.final)
         return result
 
     def _after_evaluation(self, result: TriageResult, session: Session, text: str) -> TriageResult:

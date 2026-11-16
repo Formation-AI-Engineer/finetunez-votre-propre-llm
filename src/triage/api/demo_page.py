@@ -521,6 +521,9 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
     }
     const body = { message: text };
     if (sessionId) body.session_id = sessionId;
+    // Après l'évaluation, la saisie ne se rouvre que par « Signaler une aggravation » : le
+    // message est donc toujours une aggravation, réévaluée par le modèle (le niveau ne peut que monter).
+    if (closed) body.aggravation = true;
     const ctx = context();
     const ctxKey = JSON.stringify(ctx);
     if (ctxKey !== lastContext) Object.assign(body, ctx);
@@ -545,6 +548,15 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
       lastContext = ctxKey;
       sessionId = d.session_id;
       $("session").textContent = "Session " + sessionId;
+      if (closed && d.status === "evaluation") {
+        const raised = d.priority !== closedPriority;
+        addMsg("agent", d.message, raised ? "Réévaluation : niveau relevé" : "Réévaluation : niveau inchangé", d.priority);
+        showResult(d);
+        closedPriority = d.priority;
+        markAnswer();
+        setModel("ok", "Modèle prêt");
+        return;
+      }
       if (closed && d.status === "relais_ioa") {
         // Session close : pas de nouvelle bulle si le niveau ne change pas (évite les « merci »
         // en boucle) ; une bulle seulement si un contrôle de sécurité relève le niveau.

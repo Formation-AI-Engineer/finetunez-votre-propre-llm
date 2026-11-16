@@ -747,3 +747,46 @@ maximale », avec une justification cardiaque inventée. Auparavant ignorée, ce
 maintenant affichée et signalée. C'est du **sur-triage du modèle**, dans le sens prudent, rendu
 visible plutôt que corrigé : cette formule semble être sa réponse par défaut quand l'information
 manque (les 21 cas du journal ont la même tournure).
+
+## Réévaluation après une aggravation (16/11/2026)
+
+**Constat** : après l'évaluation, « Signaler une aggravation » ne passait que par les règles
+(constantes, drapeaux rouges sur le nouveau message). Une aggravation formulée sans mot-clé ne
+changeait rien : « mon pied est devenu froid et tout blanc, je ne le sens plus » (ischémie
+aiguë) laissait le niveau tel quel.
+
+**Changement** (`src/triage/service.py`, `_reassess`) : un message marqué `aggravation` (champ
+de `POST /api/v1/triage`, envoyé par la page après le bouton) est réévalué par le modèle :
+- le modèle reçoit **la conversation d'origine sans son évaluation**, l'aggravation ajoutée à la
+  dernière réponse du patient (« … Depuis, mon état s'aggrave : … »). C'est une forme apprise :
+  un récit, ou un dialogue question clé puis réponse. Un premier essai avec le récit seul, sans
+  la question déjà posée, faisait reposer cette question au modèle (2 cas sur 4) ;
+- les trois garde-fous s'appliquent comme à la première évaluation ;
+- **le niveau ne peut pas baisser**, priorité puis tri FRENCH : un niveau plus bas que celui
+  déjà rendu est remplacé par ce dernier (garde-fou `niveau_precedent`) et le message est
+  réécrit. Sur le vrai modèle, une céphalée passait de MAXIMALE tri 1 à MAXIMALE tri 2 avant
+  cette comparaison au tri ;
+- repli sur les règles seules si le modèle ne répond pas, ne rend pas de niveau lisible
+  (alerte à l'IOA) ou recopie le prompt système ; au plus 3 réévaluations par session ;
+- un message sans le drapeau `aggravation` (un « merci », un appel direct à l'API) garde la
+  réponse fixe, sans appel au modèle.
+
+**Essai sur le vrai modèle** (API locale branchée sur le vLLM de Modal, 7 scénarios) : 7
+réévaluations sur 7 rendent un niveau lisible, en 1,4 à 2,0 s. Genou après une chute,
+MAXIMALE déjà rendu : gonflement puis pied froid et blanc, MAXIMALE gardé, avec la circulation
+citée. Douleur en fosse iliaque droite : MODÉRÉE 3B → MAXIMALE 2 avec la fièvre et les
+vomissements. Diarrhée : MODÉRÉE → MAXIMALE 2 avec le malaise et l'arrêt de la boisson.
+Gorge : MAXIMALE gardé (salive, trismus).
+
+**Limite observée** : la tournure « mon état s'aggrave » pousse le modèle vers le grave. Une
+entorse de cheville en DIFFÉRÉE 4, suivie de « ça va un peu mieux, j'ai mis de la glace », est
+passée en MAXIMALE 2. C'est du sur-triage, dans le sens prudent. Le bouton s'appelle
+« Signaler une aggravation » : un mieux se dit à l'IOA, pas à l'agent. Les justifications
+restent parfois inventées (« cèche à la limite », mots déformés), comme à la première
+évaluation.
+
+**Défaut trouvé au passage et corrigé** : « Vous êtes à niveau modérée. … » n'était pas lu par
+`parse_loose`. Le service le prenait pour une question, et le questionnaire tournait en boucle
+jusqu'à la limite des 8 échanges (diarrhée, mal de tête). La lecture de secours accepte
+maintenant « niveau » seul devant le mot de priorité. « Quel est votre niveau de douleur ? »
+reste une question.

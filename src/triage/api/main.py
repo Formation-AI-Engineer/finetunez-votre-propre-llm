@@ -41,6 +41,9 @@ class TriageRequest(BaseModel):
     age_years: float | None = Field(None, ge=0, le=120)
     vitals: Vitals | None = None
     observation: str | None = Field(None, max_length=1000, description="observation de l'IOA")
+    aggravation: bool = Field(
+        False, description="aggravation signalée après l'évaluation : réévaluation par le modèle"
+    )
 
 
 class GuardOut(BaseModel):
@@ -124,6 +127,7 @@ def triage(
             age_years=request.age_years,
             vitals=request.vitals,
             observation=request.observation,
+            aggravation=request.aggravation,
         )
     except KeyError:
         raise HTTPException(404, "Session inconnue ou expirée.") from None

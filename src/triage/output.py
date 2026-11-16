@@ -44,14 +44,18 @@ def parse_assessment(text: str) -> Assessment | None:
 
 
 _LOOSE_LEVEL = re.compile(r"tri\s+FRENCH\s*:?\s*(1|2|3A|3B|4|5)\b", re.IGNORECASE)
+# « niveau » seul : « Vous êtes à niveau modérée » (test sur le vrai modèle du 16/11/2026), qui
+# restait lu comme une question et faisait tourner le questionnaire en boucle.
 _LOOSE_PRIORITY = re.compile(
-    r"priorit[ée]\s*:?\s*(?:est\s+)?(maximale?|mod[ée]r[ée]e?|diff[ée]r[ée]e?)\b", re.IGNORECASE
+    r"(?:priorit[ée]|\bniveau)\s*:?\s*(?:est\s+)?(maximale?|mod[ée]r[ée]e?|diff[ée]r[ée]e?)\b",
+    re.IGNORECASE,
 )
 
 
 def parse_loose(text: str) -> Assessment | None:
     """Lecture de secours, pour le service seulement : niveau annoncé hors du format attendu
-    (« niveau de priorité maximal (tri FRENCH 2) », vu en démonstration le 15/11/2026).
+    (« niveau de priorité maximal (tri FRENCH 2) », vu en démonstration le 15/11/2026, ou
+    « Vous êtes à niveau modérée », vu le 16/11/2026).
 
     L'évaluation et le jeu de sécurité gardent le format strict (`parse_assessment`) : un format
     non respecté y compte comme une erreur, et les métriques publiées restent comparables.
