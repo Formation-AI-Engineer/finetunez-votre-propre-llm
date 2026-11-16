@@ -8,6 +8,8 @@ le baisser (docs/DECISIONS.md, point 7) :
 3. les drapeaux rouges sur le récit du patient (src/triage/red_flags.py).
 Les constantes sont aussi contrôlées quand le modèle pose une question, ou s'il est indisponible :
 une constante critique produit une alerte dans tous les cas ; un drapeau rouge dans le récit aussi.
+Si le modèle pose une question alors qu'un signe de tri 1 ou 2 est déjà là (constante ou drapeau
+rouge), le recueil s'arrête : évaluation MAXIMALE tout de suite (16/11/2026).
 
 Robustesse (tests sur le déploiement du 15/11/2026) :
 - quand un garde-fou relève le niveau, le message est réécrit à partir du niveau final (sinon le
@@ -84,14 +86,19 @@ def leaks_system_prompt(answer: str) -> bool:
     return any(sentence in flat for sentence in _SYSTEM_SENTENCES)
 
 
-def guarded_message(priority: str, level: str | None, guards: list[Guard]) -> str:
+def guarded_message(
+    priority: str,
+    level: str | None,
+    guards: list[Guard],
+    lead: str = "Niveau relevé par un contrôle de sécurité",
+) -> str:
     """Message d'évaluation au format standard, réécrit quand un garde-fou a relevé le niveau du
     modèle ou quand le modèle n'a pas suivi le format."""
     header = f"Niveau de priorité : {PRIORITY_LABEL[priority]}"
     lines = [f"{header} (tri FRENCH {level})" if level else header]
     if guards:
         reasons = " ; ".join(g.reason for g in guards)
-        lines.append(f"Niveau relevé par un contrôle de sécurité : {reasons}.")
+        lines.append(f"{lead} : {reasons}.")
     lines.append(f"Explication : {EXPLANATION[priority]}")
     if level:
         lines.append(f"Conduite proposée : {ORIENTATION[level]}")
@@ -275,8 +282,13 @@ class TriageService:
         if non_standard:
             result.alerts.append(NON_STANDARD_FORMAT)
         if assessment is None:
-            # Question de recueil : pas de niveau. Une constante critique ou un drapeau rouge
-            # dans le récit restent signalés à l'IOA.
+            # Question de recueil. Un signe de gravité (tri 1 ou 2) dans le récit ou les
+            # constantes arrête le recueil : évaluation MAXIMALE tout de suite, sans autre
+            # question (démonstration du 16/11 : douleur thoracique typique, 5 questions avant
+            # de conclure). Les 24 drapeaux actuels sont tous de tri 1 ou 2 ; un drapeau moins
+            # grave ajouté plus tard resterait une alerte pour l'IOA.
+            if self._stop_on_severe_sign(result, session, answer, story):
+                return result
             if hit := red_flag_floor(story, session.age_years):
                 result.alerts.append(
                     f"Drapeau rouge : {hit.name} (« {hit.excerpt} »), {hit.motif}, tri {hit.level}"
@@ -328,6 +340,33 @@ class TriageService:
         if result.guards or non_standard:
             result.model_answer = result.message
             result.message = guarded_message(priority, level, result.guards)
+
+    def _stop_on_severe_sign(
+        self, result: TriageResult, session: Session, answer: str, story: str
+    ) -> bool:
+        """Le modèle pose une question alors qu'un signe de gravité est déjà là : évaluation
+        MAXIMALE au niveau du signe le plus grave, message réécrit, question gardée pour l'audit."""
+        guards = []
+        if (floor := vital_floor(session.vitals, session.age_years)) and FRENCH_TO_PRIORITY[
+            floor.level
+        ] == "maximale":
+            guards.append(Guard("constantes", floor.reason, floor.level))
+        hit = red_flag_floor(story, session.age_years)
+        if hit and FRENCH_TO_PRIORITY[hit.level] == "maximale":
+            reason = f"{hit.name} (« {hit.excerpt} ») : {hit.motif}, tri {hit.level}"
+            guards.append(Guard("drapeau_rouge", reason, hit.level))
+        if not guards:
+            return False
+        level = min((g.french_level for g in guards), key=_FRENCH_LEVELS.index)
+        result.status = "evaluation"
+        result.priority, result.french_level = "maximale", level
+        result.guards = guards
+        result.model_answer = answer.strip()
+        result.message = guarded_message(
+            "maximale", level, guards, lead="Signe de gravité repéré, pas d'autre question"
+        )
+        session.final = ("maximale", level)
+        return True
 
     def _reassess(
         self, result: TriageResult, session: Session, text: str, observation: str | None

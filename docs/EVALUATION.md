@@ -790,3 +790,29 @@ restent parfois inventées (« cèche à la limite », mots déformés), comme �
 jusqu'à la limite des 8 échanges (diarrhée, mal de tête). La lecture de secours accepte
 maintenant « niveau » seul devant le mot de priorité. « Quel est votre niveau de douleur ? »
 reste une question.
+
+## Signe de gravité : fin du recueil (16/11/2026)
+
+**Constat en démonstration** : « douleur qui serre la poitrine depuis 30 minutes, elle va dans
+le bras gauche et je transpire ». Le drapeau rouge « douleur thoracique typique » (tri 2) est
+levé dès le premier message, mais seulement en alerte pour l'IOA. Le modèle pose ensuite **5
+questions**, dont « Avez-vous mal à la poitrine ? », avant de conclure MAXIMALE 2. Le niveau
+final est juste ; le délai, non. Le modèle sait mal mener un questionnaire : seuls 8 % des
+exemples d'entraînement lui apprennent à poser une question, et jamais plus d'une.
+
+**Changement** (`src/triage/service.py`, `_stop_on_severe_sign`) : quand le modèle répond par
+une question alors qu'un signe de tri 1 ou 2 est déjà présent, le recueil s'arrête. Ce signe
+peut être un drapeau rouge dans le récit ou une constante critique. L'évaluation rendue est
+MAXIMALE au tri du signe le plus grave, avec un message réécrit (« Signe de gravité repéré,
+pas d'autre question : … »). La question du modèle reste dans le journal (`model_answer`). Les
+24 drapeaux actuels sont tous de tri 1 ou 2 : chacun arrête désormais le recueil.
+
+**Essai sur le vrai modèle** (API locale branchée sur le vLLM de Modal) : la douleur
+thoracique conclut MAXIMALE 2 dès le premier message. Les cas sans signe de gravité (douleur
+abdominale, entorse) posent toujours leurs questions. Robustesse **20 / 20**.
+
+**Effet attendu sur les chiffres** : aucun sur les métriques du test, qui portent sur la
+première réponse du modèle et appliquent déjà les drapeaux aux évaluations (ligne « +
+drapeaux », sur-triage 14,5 %). Dans le service, un faux positif d'un drapeau conclut
+maintenant tout de suite au lieu de laisser le modèle poursuivre : c'est le même sur-triage,
+plus tôt.

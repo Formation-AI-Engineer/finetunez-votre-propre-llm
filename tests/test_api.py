@@ -209,12 +209,11 @@ def test_scrub(text, expected):
 
 def test_red_flag_in_the_story_raises_the_level(client):
     api, _ = client(QUESTION, evaluation("DIFFÉRÉE", "5"))
-    first = api.post(
-        "/api/v1/triage", json={"message": "J'ai une douleur qui serre la poitrine."}
-    ).json()
+    first = api.post("/api/v1/triage", json={"message": "J'ai mal à la poitrine."}).json()
+    assert first["status"] == "question"  # pas encore de signe de gravité
     out = api.post(
         "/api/v1/triage",
-        json={"message": "Depuis une heure, avec des sueurs.", "session_id": first["session_id"]},
+        json={"message": "Ça serre, avec des sueurs.", "session_id": first["session_id"]},
     ).json()
     assert out["model_priority"] == "differee" and out["priority"] == "maximale"
     assert [g["name"] for g in out["guards"]] == ["drapeau_rouge"]
@@ -264,14 +263,32 @@ def test_system_prompt_leak_is_replaced(client):
     assert "ce qui vous amène" in out["message"]
 
 
-def test_red_flag_during_a_question_raises_an_alert(client):
-    api, _ = client(QUESTION)
+def test_severe_red_flag_stops_the_questions(client):
+    # Démonstration du 16/11 : douleur thoracique typique, 5 questions avant de conclure.
+    api, service = client(QUESTION)
     out = api.post(
         "/api/v1/triage",
         json={"message": "J'ai une douleur qui serre la poitrine et je transpire."},
     ).json()
-    assert out["status"] == "question" and out["priority"] is None
-    assert any(a.startswith("Drapeau rouge") for a in out["alerts"])
+    assert out["status"] == "evaluation" and (out["priority"], out["french_level"]) == (
+        "maximale",
+        "2",
+    )
+    assert out["model_priority"] is None and [g["name"] for g in out["guards"]] == ["drapeau_rouge"]
+    assert out["message"].startswith("Niveau de priorité : MAXIMALE (tri FRENCH 2)")
+    assert "pas d'autre question" in out["message"]
+    assert QUESTION not in out["message"]
+    closed = api.post(
+        "/api/v1/triage", json={"message": "non", "session_id": out["session_id"]}
+    ).json()
+    assert closed["status"] == "relais_ioa" and len(service.model.calls) == 1
+
+
+def test_critical_vital_sign_stops_the_questions(client):
+    api, _ = client(QUESTION)
+    out = api.post("/api/v1/triage", json={"message": "Je tousse.", "vitals": {"spo2": 84}}).json()
+    assert out["status"] == "evaluation" and out["priority"] == "maximale"
+    assert [g["name"] for g in out["guards"]] == ["constantes"]
 
 
 def test_demo_page_is_served_without_key_and_holds_no_secret():
