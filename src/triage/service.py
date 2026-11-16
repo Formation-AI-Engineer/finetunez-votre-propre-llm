@@ -244,7 +244,7 @@ class TriageService:
                 return self._reassess(result, session, text, observation)
             return self._after_evaluation(result, session, text)
         if session.turns >= MAX_TURNS:
-            return self._handover(result, session, "nombre maximal d'échanges atteint")
+            return self._handover(result, session, "nombre maximal d'échanges atteint", text)
         if is_english(text):
             self._handover(result, session, "message en anglais")
             result.message = ENGLISH_HANDOVER
@@ -257,7 +257,7 @@ class TriageService:
             answer = self.model.complete(session.messages)
         except ModelUnavailable:
             session.messages.pop()
-            return self._handover(result, session, "modèle indisponible")
+            return self._handover(result, session, "modèle indisponible", text)
         result.latency_ms = round((self.clock() - start) * 1000)
         session.story.append(text.strip())
         session.messages.append({"role": "assistant", "content": answer})
@@ -426,13 +426,33 @@ class TriageService:
         result.priority, result.french_level = priority, level
         return result
 
-    def _handover(self, result: TriageResult, session: Session, why: str) -> TriageResult:
-        """Relais à l'IOA, avec le plancher des constantes s'il y en a un."""
+    def _handover(
+        self, result: TriageResult, session: Session, why: str, text: str = ""
+    ) -> TriageResult:
+        """Relais à l'IOA, avec le plancher des constantes et des drapeaux rouges du récit (y
+        compris le message en cours) : ni l'un ni l'autre ne passe par le modèle. Vérification
+        de la v12 (16/11/2026) : douleur thoracique typique pendant un démarrage à froid →
+        relais sans aucun niveau."""
         result.status = "relais_ioa"
         result.turn = session.turns
         result.message = f"Évaluation à faire par l'infirmier ou l'infirmière d'accueil ({why})."
+        priority, level = None, None
         floor = vital_floor(session.vitals, session.age_years)
         if floor:
-            result.priority, result.french_level = FRENCH_TO_PRIORITY[floor.level], floor.level
+            priority, level = FRENCH_TO_PRIORITY[floor.level], floor.level
             result.guards.append(Guard("constantes", floor.reason, floor.level))
+        story = " ".join([*session.story, text.strip()])
+        hit = red_flag_floor(story, session.age_years)
+        if hit and (
+            priority is None
+            or _severity(FRENCH_TO_PRIORITY[hit.level], hit.level) < _severity(priority, level)
+        ):
+            priority, level = FRENCH_TO_PRIORITY[hit.level], hit.level
+            reason = f"{hit.name} (« {hit.excerpt} ») : {hit.motif}, tri {hit.level}"
+            result.guards.append(Guard("drapeau_rouge", reason, hit.level))
+        if priority is not None:
+            result.priority, result.french_level = priority, level
+            label = f"{PRIORITY_LABEL[priority]} (tri FRENCH {level})"
+            reasons = " ; ".join(g.reason for g in result.guards)
+            result.message += f"\nNiveau minimal : {label}, {reasons}."
         return result

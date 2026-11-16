@@ -102,6 +102,23 @@ def test_model_down_hands_over_to_the_nurse_with_the_vital_floor(client):
     assert service.sessions[out["session_id"]].messages[-1]["role"] == "system"
 
 
+def test_model_down_hands_over_with_the_red_flag_floor(client):
+    # Vérification de la v12 : démarrage à froid → relais sans niveau malgré le drapeau rouge.
+    api, _ = client(ModelUnavailable("démarrage"))
+    body = {"message": "Une douleur qui serre la poitrine, je transpire."}
+    out = api.post("/api/v1/triage", json=body).json()
+    assert out["status"] == "relais_ioa"
+    assert (out["priority"], out["french_level"]) == ("maximale", "2")
+    assert [g["name"] for g in out["guards"]] == ["drapeau_rouge"]
+    assert "Niveau minimal : MAXIMALE (tri FRENCH 2)" in out["message"]
+
+
+def test_model_down_without_any_sign_gives_no_level(client):
+    api, _ = client(ModelUnavailable("démarrage"))
+    out = api.post("/api/v1/triage", json={"message": "J'ai mal au genou."}).json()
+    assert out["status"] == "relais_ioa" and out["priority"] is None and out["guards"] == []
+
+
 def test_session_is_handed_over_after_max_turns(client):
     api, _ = client(*[QUESTION] * MAX_TURNS)
     sid = None

@@ -36,7 +36,7 @@ l'IOA valide le niveau, et les garde-fous ne peuvent que relever le niveau, jama
 | Endpoint en ligne, HTTPS, clé d'API, clé d'audit distincte | ✅ | test de bout en bout, robustesse (401) |
 | Entrées invalides rejetées avant le modèle | ✅ | robustesse 9/9 (422, 401, 404) |
 | Injection de prompt sans effet sur le niveau | ✅ | 4/4, mais **le modèle seul obéit** : ce sont les garde-fous qui tiennent |
-| Mode dégradé si vLLM est indisponible | ✅ | relais IOA en 10 s au plus, plancher des constantes conservé |
+| Mode dégradé si vLLM est indisponible | ✅ | relais IOA en 10 s au plus, plancher des constantes et des drapeaux rouges conservé (16/11) |
 | Évaluations hors format rattrapées | ✅ | lecture de secours, alerte IOA (10 % des « questions » avant correction) |
 | Session close après l'évaluation, niveau qui ne peut que monter | ✅ | tests unitaires, page verrouillée |
 | Journal d'audit sans identifiant direct, persistant | ✅ | volume Modal, masquage des noms et numéros |

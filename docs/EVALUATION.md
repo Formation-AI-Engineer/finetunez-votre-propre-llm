@@ -816,3 +816,15 @@ première réponse du modèle et appliquent déjà les drapeaux aux évaluations
 drapeaux », sur-triage 14,5 %). Dans le service, un faux positif d'un drapeau conclut
 maintenant tout de suite au lieu de laisser le modèle poursuivre : c'est le même sur-triage,
 plus tôt.
+
+## Relais à l'IOA : drapeaux rouges appliqués (16/11/2026)
+
+**Constat à la vérification de la v12** : une douleur thoracique typique, envoyée pendant un
+démarrage à froid, recevait un relais IOA **sans aucun niveau**. Le relais (modèle
+indisponible, limite des 8 échanges) n'appliquait que le plancher des constantes, alors que
+les drapeaux rouges, eux non plus, ne passent pas par le modèle.
+
+**Changement** (`_handover`) : le relais applique aussi les drapeaux rouges, sur tout le récit
+et le message en cours. Il retient le plus grave des deux planchers et l'annonce dans le
+message (« Niveau minimal : MAXIMALE (tri FRENCH 2), douleur thoracique typique… »). Sans signe
+de gravité, le relais reste sans niveau : l'IOA évalue.
