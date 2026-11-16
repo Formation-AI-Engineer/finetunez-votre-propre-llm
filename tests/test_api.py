@@ -296,6 +296,8 @@ def test_demo_page_is_served_without_key_and_holds_no_secret():
             None,
         ),
         ("La priorité est modérée, tri FRENCH 4.", "moderee", "4"),  # le plus grave des deux
+        ("Vous êtes à niveau modérée. La fièvre ne doit pas s'aggraver.", "moderee", None),
+        ("Quel est votre niveau de douleur, de 0 à 10 ?", None, None),
         (
             "Je vais vous aider à évaluer votre niveau de priorité. Avez-vous de la fièvre ?",
             None,
@@ -362,3 +364,98 @@ def test_header_buried_in_invented_text_is_rewritten(client):
 
 def test_demo_page_is_never_cached():
     assert TestClient(main.app).get("/").headers["cache-control"] == "no-store"
+
+
+def _closed_session(api):
+    first = api.post("/api/v1/triage", json={"message": "Mal au ventre depuis hier."}).json()
+    assert first["status"] == "evaluation"
+    return first["session_id"]
+
+
+def test_aggravation_is_reassessed_by_the_model_on_the_whole_story(client):
+    api, service = client(evaluation("MODÉRÉE", "3B"), evaluation("MAXIMALE", "2"))
+    sid = _closed_session(api)
+    out = api.post(
+        "/api/v1/triage",
+        json={
+            "message": "La douleur est devenue insupportable.",
+            "session_id": sid,
+            "aggravation": True,
+        },
+    ).json()
+    assert out["status"] == "evaluation" and out["priority"] == "maximale"
+    assert out["model_priority"] == "maximale" and out["guards"] == []
+    # Conversation d'origine sans l'évaluation, aggravation ajoutée au dernier message.
+    call = service.model.calls[1]
+    assert [m["role"] for m in call] == ["system", "user"]
+    assert call[1]["content"] == (
+        "Mal au ventre depuis hier. Depuis, mon état s'aggrave : La douleur est devenue "
+        "insupportable."
+    )
+
+
+def test_reassessment_keeps_the_question_already_asked(client):
+    api, service = client(QUESTION, evaluation("MODÉRÉE", "3B"), evaluation("MAXIMALE", "2"))
+    first = api.post("/api/v1/triage", json={"message": "J'ai mal au genou."}).json()
+    sid = first["session_id"]
+    api.post("/api/v1/triage", json={"message": "Depuis hier.", "session_id": sid})
+    body = {"message": "Mon pied est froid.", "session_id": sid, "aggravation": True}
+    out = api.post("/api/v1/triage", json=body).json()
+    assert out["status"] == "evaluation" and out["priority"] == "maximale"
+    call = service.model.calls[2]
+    assert [m["role"] for m in call] == ["system", "user", "assistant", "user"]
+    assert call[2]["content"] == QUESTION
+    assert call[3]["content"] == "Depuis hier. Depuis, mon état s'aggrave : Mon pied est froid."
+
+
+def test_reassessment_never_lowers_the_level(client):
+    api, _ = client(evaluation("MODÉRÉE", "3B"), evaluation("DIFFÉRÉE", "5"))
+    sid = _closed_session(api)
+    out = api.post(
+        "/api/v1/triage",
+        json={
+            "message": "Ça va un peu mieux mais j'ai encore mal.",
+            "session_id": sid,
+            "aggravation": True,
+        },
+    ).json()
+    assert out["priority"] == "moderee" and out["model_priority"] == "differee"
+    assert [g["name"] for g in out["guards"]] == ["niveau_precedent"]
+    assert out["message"].startswith("Niveau de priorité : MODÉRÉE (tri FRENCH 3B)")
+    assert "DIFFÉRÉE" not in out["message"]
+
+
+def test_reassessment_falls_back_to_rules_without_a_readable_level(client):
+    api, _ = client(evaluation("MODÉRÉE", "3B"), QUESTION, ModelUnavailable("down"))
+    sid = _closed_session(api)
+    body = {"message": "Ça serre dans la poitrine.", "session_id": sid, "aggravation": True}
+    out = api.post("/api/v1/triage", json=body).json()
+    assert out["status"] == "relais_ioa" and out["priority"] == "maximale"  # drapeau rouge
+    assert "Réévaluation sans niveau lisible : règles seules appliquées" in out["alerts"]
+    down = api.post("/api/v1/triage", json=body).json()  # modèle indisponible
+    assert down["status"] == "relais_ioa" and down["priority"] == "maximale"
+
+
+def test_reassessments_are_capped_and_plain_messages_do_not_call_the_model(client):
+    from triage.service import MAX_REASSESSMENTS
+
+    answers = [evaluation("MODÉRÉE", "3B")] * (1 + MAX_REASSESSMENTS)
+    api, service = client(*answers)
+    sid = _closed_session(api)
+    api.post("/api/v1/triage", json={"message": "merci", "session_id": sid})
+    assert len(service.model.calls) == 1  # sans le drapeau aggravation : pas d'appel
+    body = {"message": "J'ai plus mal.", "session_id": sid, "aggravation": True}
+    for _ in range(MAX_REASSESSMENTS + 1):
+        out = api.post("/api/v1/triage", json=body).json()
+    assert len(service.model.calls) == 1 + MAX_REASSESSMENTS
+    assert out["status"] == "relais_ioa" and out["priority"] == "moderee"
+
+
+def test_reassessment_never_lowers_the_french_level_within_a_priority(client):
+    # Vrai modèle, 16/11 : céphalée MAXIMALE tri 1, puis tri 2 à la réévaluation.
+    api, _ = client(evaluation("MAXIMALE", "1"), evaluation("MAXIMALE", "2"))
+    sid = _closed_session(api)
+    body = {"message": "Je vomis.", "session_id": sid, "aggravation": True}
+    out = api.post("/api/v1/triage", json=body).json()
+    assert (out["priority"], out["french_level"]) == ("maximale", "1")
+    assert [g["name"] for g in out["guards"]] == ["niveau_precedent"]
