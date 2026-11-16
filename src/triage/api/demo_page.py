@@ -513,7 +513,7 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
     $("err").textContent = "";
     $("note").replaceChildren();
     if (!text) return;
-    if (!$("apikey").value) {
+    if (!$("apikey").value.trim()) {
       $("err").textContent = "Saisissez la clé d'API (panneau Accès, en bas à droite).";
       $("apikey").scrollIntoView({ behavior: "smooth", block: "center" });
       $("apikey").focus({ preventScroll: true });
@@ -531,7 +531,7 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
     try {
       const r = await fetch("api/v1/triage", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-API-Key": $("apikey").value },
+        headers: { "Content-Type": "application/json", "X-API-Key": $("apikey").value.trim() },
         body: JSON.stringify(body),
       });
       const d = await r.json().catch(() => ({}));
@@ -642,7 +642,7 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
     out.replaceChildren();
     if (!sessionId) { out.append(el("p", "empty", "Pas de session en cours.")); return; }
     const r = await fetch("api/v1/audit?session_id=" + encodeURIComponent(sessionId),
-      { headers: { "X-Audit-Key": $("auditkey").value } });
+      { headers: { "X-Audit-Key": $("auditkey").value.trim() } });
     if (!r.ok) { out.append(el("p", "err", "Erreur " + r.status + " (clé d'audit ?)")); return; }
     const rows = await r.json();
     const t = el("table");
