@@ -29,7 +29,8 @@ ARCHIVE = "Finetunez_votre_propre_LLM_CAMARA_Lamine"
 REPO = "https://github.com/Formation-AI-Engineer/finetunez-votre-propre-llm"
 HF = "https://huggingface.co"
 API = "https://camaralam--triage-chsa-api.us-east.modal.run"
-ACCESS = "Dépôts privés : accès sur demande."
+ACCESS = "Dépôts Hugging Face privés : accès sur demande."
+PUBLIC = "Dépôt GitHub public le temps de la soutenance."
 LINKS = {
     1: f"""# Dataset médical bilingue (Hugging Face Datasets / JSONL)
 
@@ -37,7 +38,8 @@ LINKS = {
 - Révision : `7dffce7d0494094a0197f67a3085d8823fdb6d9f`
 - Copie des fichiers : dossier `donnees/` (configurations `sft` et `dpo`, splits train,
   validation, test)
-- Construction : [scripts/build_dataset.py]({REPO}/blob/main/scripts/build_dataset.py)
+- Construction (dépôt GitHub public) :
+  [scripts/build_dataset.py]({REPO}/blob/main/scripts/build_dataset.py)
 
 {ACCESS} Données désidentifiées, remises pour la seule évaluation du projet : ne pas diffuser.
 """,
@@ -69,7 +71,7 @@ Le modèle s'éteint après 5 minutes sans requête : bouton « Réveiller le mo
   (copie : `ci.yml`)
 - Exécutions : [{REPO}/actions]({REPO}/actions)
 
-{ACCESS}
+{PUBLIC}
 """,
 }
 ADAPTERS = {
