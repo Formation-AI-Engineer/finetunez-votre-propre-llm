@@ -87,7 +87,56 @@
 
 // ---------------------------------------------------------------- 0. Synthèse
 #heading(numbering: none)[Synthèse]
-#todo[verdict go / no-go, 5 chiffres clés, 3 recommandations (rédigée en dernier).]
+Le CHSA veut savoir si un agent conversationnel peut aider l'infirmier ou l'infirmière
+d'accueil (IOA) à classer les patients des urgences. Ce POC répond *oui sur le plan
+technique, pas encore sur le plan clinique*. Un modèle de 1,7 milliard de paramètres,
+spécialisé par fine-tuning (SFT puis DPO) et encadré par trois garde-fous déterministes,
+propose un niveau de priorité FRENCH en moins de 3 secondes et l'explique. Il ne l'impose
+jamais : l'IOA décide.
+
+#figure(caption: [Cinq chiffres clés. Jeu de test de 200 vignettes, évalué une seule fois ; seuils écrits avant l'évaluation.],
+  table(columns: (1fr, auto, auto, auto),
+    align: (left, right, right, center),
+    [Indicateur], [Résultat], [Seuil], [Atteint],
+    [Cas de priorité maximale manqués], [1/84, soit 1,2 % \[IC 95 % : 0,2 ; 6,4\]], [≤ 5 %], [oui],
+    [Exactitude du niveau (3 niveaux)], [86,5 %], [≥ 75 %], [oui],
+    [Sur-triage], [12,0 %], [≤ 20 %], [oui],
+    [Réponses dangereuses, 29 cas neufs écrits à la main], [1/29], [0], [*non*],
+    [Latence p95 côté serveur, 16 requêtes simultanées], [2,03 s], [≤ 3 s], [oui],
+  ),
+)
+
+*Ce qu'il faut retenir.*
+- *La sécurité repose sur l'architecture plus que sur le modèle.* Seul, le modèle donne
+  8 réponses dangereuses sur 29 cas neufs et obéit à une injection de prompt. Les garde-fous
+  (constantes vitales, cohérence du critère cité, drapeaux rouges) ramènent ce chiffre à 1.
+  Ils ne peuvent que relever le niveau, jamais l'abaisser.
+- *Les données sont la vraie limite.* Aucune source publique ne contient de triage : les
+  cas d'entraînement et de test sont des vignettes synthétiques, écrites à partir du
+  référentiel FRENCH. Les chiffres ci-dessus mesurent le système sur ces vignettes, pas sur
+  de vrais patients.
+- *Le service est exploitable.* Il est déployé sur un GPU à la demande, avec une
+  intégration continue qui teste et publie chaque version, un journal d'audit sans texte
+  libre, un mode dégradé qui renvoie le patient vers l'IOA et un script de surveillance.
+  Il n'est pas hébergé chez un hébergeur certifié HDS.
+
+#figure(caption: [Décision par usage (détail en section 10).],
+  table(columns: (1fr, auto),
+    [Usage], [Décision],
+    [Démonstration et soutenance sur cas fictifs], [*GO*],
+    [Expérimentation encadrée avec des IOA, sans patient], [*GO sous conditions*],
+    [Aide au triage de vrais patients], [*NO-GO* en l'état],
+    [Modèle seul, sans les garde-fous], [*NO-GO*],
+  ),
+)
+
+*Trois recommandations.*
++ *Lancer une expérimentation encadrée avec les IOA* sur des cas fictifs, en relevant pour
+  chaque cas l'écart entre leur niveau et celui du système.
++ *Constituer un jeu de données réelles* à partir des dossiers d'urgence du CHSA, dans un
+  cadre HDS et après une analyse d'impact (AIPD) : c'est la condition d'un gain clinique.
++ *Garder l'architecture de sécurité* (garde-fous, IOA qui décide, journal d'audit) quel que
+  soit le modèle retenu ensuite, y compris un modèle de 32 milliards de paramètres.
 
 // ---------------------------------------------------------------- 1. Contexte
 = Contexte et objectifs
@@ -785,4 +834,52 @@ donnée la plus précieuse pour améliorer le modèle et pour la surveillance.
 
 // ---------------------------------------------------------------- Références
 #heading(numbering: none)[Références]
-#todo[FRENCH (SFMU), ACS, articles, cours.]
+#set par(justify: false)
+#set text(9.5pt)
+
+*Référentiels cliniques*
+- Société française de médecine d'urgence (SFMU). _FRENCH : FRench Emergency Nurses
+  Classification in-Hospital_, version 1.1, juin 2018. Grille de tri utilisée pour les
+  vignettes, les niveaux et les critères.
+- American College of Surgeons, Committee on Trauma. _Resources for Optimal Care of the
+  Injured Patient_. Chicago, 2014. Objectif de moins de 5 % de sous-triage, 25 à 35 % de
+  sur-triage tolérés (section 4).
+
+*Méthodes et outils*
+- Hu E. et al. « LoRA: Low-Rank Adaptation of Large Language Models ». _ICLR_, 2022.
+  arXiv:2106.09685.
+- Rafailov R. et al. « Direct Preference Optimization: Your Language Model is Secretly a
+  Reward Model ». _NeurIPS_, 2023. arXiv:2305.18290.
+- Qwen Team. « Qwen3 Technical Report ». 2025. arXiv:2505.09388.
+- Kwon W. et al. « Efficient Memory Management for Large Language Model Serving with
+  PagedAttention » (vLLM). _SOSP_, 2023. arXiv:2309.06180.
+- Wilson E. B. « Probable Inference, the Law of Succession, and Statistical Inference ».
+  _Journal of the American Statistical Association_, 22(158), 1927, p. 209-212.
+- Hugging Face. Documentation de TRL (`SFTTrainer`, `DPOTrainer`) et de PEFT.
+
+*Jeux de données* (révisions figées dans `docs/DONNEES.md`)
+- MediQAl, `ANR-MALADES/MediQAl` (Hugging Face), CC BY 4.0 : QCM de médecine en français.
+- Labrak Y. et al. « FrenchMedMCQA: A French Multiple-Choice Question Answering Dataset for
+  Medical domain ». _LOUHI_, 2022. Jeu `qanastek/frenchmedmcqa`, Apache 2.0.
+- Ben Abacha A., Demner-Fushman D. « A question-entailment approach to question answering ».
+  _BMC Bioinformatics_, 20, 2019 (MedQuAD). CC BY 4.0.
+- Zhang K. et al. « UltraMedical: Building Specialized Generalists in Biomedicine ».
+  _NeurIPS Datasets and Benchmarks_, 2024. Jeu `TsinghuaC3I/UltraMedical-Preference`, MIT.
+
+*Cadre réglementaire*
+- Règlement (UE) 2016/679 du 27 avril 2016 (RGPD).
+- Règlement (UE) 2017/745 du 5 avril 2017 relatif aux dispositifs médicaux.
+- Règlement (UE) 2024/1689 du 13 juin 2024 établissant des règles harmonisées concernant
+  l'intelligence artificielle (AI Act).
+- Code de la santé publique, article L1111-8 : hébergement des données de santé (HDS).
+
+*Cours suivis*
+- OpenClassrooms, parcours AI Engineer. Projet « Finetunez votre propre LLM » (énoncé et
+  ressources).
+- Hugging Face. _LLM Course_, chapitre 11 « Fine-tune LLMs ».
+- « Post-training 101 », _Tokens for Thoughts_.
+
+*Code et artefacts du POC*
+- Dépôt `finetunez-votre-propre-llm` : code, documentation (`docs/`) et résultats bruts
+  (`outputs/`) de chaque chiffre du rapport.
+- Poids fusionnés : `lcamara/triage-chsa-qwen3-1.7b`, révision `97e8679` (dépôt privé).
