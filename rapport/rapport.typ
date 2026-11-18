@@ -442,8 +442,8 @@ sur-triage. Mais sur le premier jeu de sécurité, rédigé hors des gabarits, l
 réponses dangereuses contre 12. J'ai retenu le DPO parce que ce jeu est le seul à mesurer des
 formulations libres, donc le risque réel, et parce qu'un sous-triage retarde la prise en
 charge d'une urgence vitale alors qu'un sur-triage coûte de l'attente, que l'IOA corrige.
-En traumatologie, l'American College of Surgeons tolère 25 à 35 % de sur-triage pour viser
-moins de 5 % de sous-triage. Le seuil de sur-triage a donc été fixé à 20 %.
+En traumatologie, l'American College of Surgeons vise 5 % de sous-triage au plus et juge
+acceptable un sur-triage de 25 à 35 %. Le seuil de sur-triage a donc été fixé à 20 %.
 
 == Poids finaux
 Les deux adaptateurs sont fusionnés dans les poids du modèle (3,4 Go), contrôlés (99,83 % de
@@ -842,8 +842,8 @@ donnée la plus précieuse pour améliorer le modèle et pour la surveillance.
   Classification in-Hospital_, version 1.1, juin 2018. Grille de tri utilisée pour les
   vignettes, les niveaux et les critères.
 - American College of Surgeons, Committee on Trauma. _Resources for Optimal Care of the
-  Injured Patient_. Chicago, 2014. Objectif de moins de 5 % de sous-triage, 25 à 35 % de
-  sur-triage tolérés (section 4).
+  Injured Patient_, 6#super[e] édition. Chicago, 2014. Sous-triage cible de 5 % ; « la
+  plupart s'accordent » sur 25 à 35 % de sur-triage acceptable (section 4).
 
 *Méthodes et outils*
 - Hu E. et al. « LoRA: Low-Rank Adaptation of Large Language Models ». _ICLR_, 2022.
@@ -858,11 +858,12 @@ donnée la plus précieuse pour améliorer le modèle et pour la surveillance.
 - Hugging Face. Documentation de TRL (`SFTTrainer`, `DPOTrainer`) et de PEFT.
 
 *Jeux de données* (révisions figées dans `docs/DONNEES.md`)
-- MediQAl, `ANR-MALADES/MediQAl` (Hugging Face), CC BY 4.0 : QCM de médecine en français.
+- Bazoge A. « MediQAl: A French Medical Question Answering Dataset for Knowledge and
+  Reasoning Evaluation ». 2025. arXiv:2507.20917. Jeu `ANR-MALADES/MediQAl`, CC BY 4.0.
 - Labrak Y. et al. « FrenchMedMCQA: A French Multiple-Choice Question Answering Dataset for
-  Medical domain ». _LOUHI_, 2022. Jeu `qanastek/frenchmedmcqa`, Apache 2.0.
+  Medical domain ». _LOUHI_, 2022, p. 41-46. Jeu `qanastek/frenchmedmcqa`, Apache 2.0.
 - Ben Abacha A., Demner-Fushman D. « A question-entailment approach to question answering ».
-  _BMC Bioinformatics_, 20, 2019 (MedQuAD). CC BY 4.0.
+  _BMC Bioinformatics_, 20:511, 2019 (MedQuAD). CC BY 4.0.
 - Zhang K. et al. « UltraMedical: Building Specialized Generalists in Biomedicine ».
   _NeurIPS Datasets and Benchmarks_, 2024. Jeu `TsinghuaC3I/UltraMedical-Preference`, MIT.
 
