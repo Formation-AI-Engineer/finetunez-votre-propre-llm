@@ -69,7 +69,7 @@
   #set par(justify: false)
   #grid(columns: (4.2cm, 1fr), row-gutter: 0.55em,
     [À l'attention de], [Dr Marie Dubois, directrice de l'innovation médicale],
-    [Rédigé par], [Lamine Camara, ingénieur IA],
+    [Rédigé par], [Lamine CAMARA, ingénieur IA],
     [Date], [novembre 2026],
     [Modèle], [Qwen3-1.7B-Base, SFT (LoRA) puis DPO, poids `lcamara/triage-chsa-qwen3-1.7b@97e8679`],
     [Service], [vLLM 0.32 et API FastAPI sur Modal, version v13 (16/11/2026)],
