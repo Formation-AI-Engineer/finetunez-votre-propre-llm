@@ -91,13 +91,113 @@
 
 // ---------------------------------------------------------------- 1. Contexte
 = Contexte et objectifs
-#todo[surcharge des urgences, les 5 attentes de la mission, ce que le POC fait et ne fait pas,
-seuils fixés avant le test.]
+#enjeu[Le POC montre qu'un petit modèle de langage, spécialisé sur le référentiel FRENCH et
+encadré par des règles, peut proposer un niveau de priorité en moins de 2 secondes et
+l'expliquer. Il ne remplace pas l'IOA : il prépare son évaluation et signale les cas graves.]
+
+== Le besoin
+Le service des urgences du CHSA est en surcharge constante, surtout aux heures de pointe. Le
+personnel d'accueil et de triage manque parfois d'effectifs : l'attente s'allonge, et un cas
+critique peut ne pas être repéré à temps. La Direction de l'innovation médicale souhaite
+savoir si un agent d'IA peut assister le triage initial, en trois phases : un POC sur un
+modèle compact (Qwen3-1.7B), son optimisation par SFT, LoRA et DPO, puis, en cas de succès,
+le passage à des modèles de 32 milliards de paramètres ou plus. Ce rapport couvre les deux
+premières phases, menées en quatre semaines, et prépare la troisième.
+
+== Les attentes de la mission et ce que le POC y répond
+#figure(caption: [Les cinq attentes de la mission.],
+  table(columns: (1fr, auto, 1.5fr),
+    [Attente], [État], [Ce que fait le POC],
+    [Collecter les symptômes par un questionnaire adaptatif], [Partiel],
+    [L'agent pose une question clé quand une information manque, puis conclut ; il s'arrête dès qu'un signe de gravité apparaît, et réévalue si le patient signale une aggravation. Il ne mène pas encore un vrai questionnaire à plusieurs questions (section 7).],
+    [Évaluer la priorité (maximale, modérée, différée) selon les protocoles], [Oui],
+    [Niveau et tri FRENCH (SFMU), critère du référentiel cité ; trois garde-fous déterministes.],
+    [Expliquer l'évaluation et les recommandations], [Oui, avec réserve],
+    [Motif, éléments déterminants, explication pour le patient, conduite proposée. Les justifications sont parfois inventées.],
+    [S'intégrer au système d'information], [Préparé],
+    [API REST documentée, clés d'accès ; correspondance avec les ressources FHIR décrite (section 10), non branchée.],
+    [Tracer chaque interaction pour les audits], [Oui],
+    [Journal persistant de chaque échange, sans identifiant direct, consultable avec une clé distincte.],
+  ),
+)
+
+== Périmètre
+Le POC *propose* un niveau de priorité et l'explique. Il ne pose pas de diagnostic, ne
+prescrit rien, n'oriente pas le patient hors des urgences et ne décide jamais : l'IOA valide
+chaque niveau. Il a été construit et évalué sur des cas fictifs, en français, chez l'adulte
+(les seuils des constantes sont ceux de l'adulte). Les critères d'acceptation (section 5) ont
+été fixés avant l'évaluation finale ; les livrables sont le jeu de données, les poids du
+modèle, le service de démonstration, le pipeline CI/CD et ce rapport.
 
 // ---------------------------------------------------------------- 2. Architecture
 = Architecture du système
-#todo[schéma patient → API → vLLM → 3 garde-fous → message et audit ; questionnaire ;
-FRENCH ramené à 3 niveaux ; les garde-fous ne peuvent que relever le niveau.]
+#enjeu[Le modèle propose, des règles fixent un plancher, l'IOA décide. Les règles ne peuvent
+que relever le niveau, jamais le baisser : une erreur du modèle dans le sens dangereux est
+rattrapée chaque fois qu'un signe objectif est présent.]
+
+#let node(title, body, fill: white) = block(
+  fill: fill, stroke: 0.7pt + accent, radius: 3pt, inset: 6pt, width: 100%,
+  align(center, par(justify: false, text(8.5pt)[#text(weight: "bold", fill: accent, title) \ #body])),
+)
+#let arrow = align(center + horizon, text(14pt, fill: accent)[→])
+#figure(caption: [Chemin d'un message. Les flèches de retour (réponse au patient) sont omises.],
+  block(width: 100%, {
+    grid(columns: (1fr, 0.5cm, 1fr, 0.5cm, 1fr, 0.5cm, 1fr, 0.5cm, 1fr),
+      align: horizon,
+      node([Page web], [patient et IOA : message, âge, constantes, observation]),
+      arrow,
+      node([API FastAPI], [clé, validation, session, langue, questionnaire]),
+      arrow,
+      node([vLLM], [Qwen3-1.7B SFT + DPO : question ou évaluation], fill: soft),
+      arrow,
+      node([Garde-fous], [constantes · cohérence du critère · drapeaux rouges]),
+      arrow,
+      node([Réponse], [niveau final, message réécrit si relevé, alertes IOA]),
+    )
+    v(4pt)
+    node([Journal d'audit (volume persistant)],
+      [chaque échange : niveau du modèle, niveau final, garde-fous, alertes, latence ; noms et numéros masqués])
+  }),
+)
+
+== Le parcours d'un échange
++ *Entrée.* La page envoie le message du patient et, si l'IOA les a saisis, l'âge, les
+  constantes et son observation. L'API vérifie la clé et le format ; un message en anglais
+  part directement à l'IOA, car le triage n'est validé qu'en français.
++ *Le modèle* répond soit par une question, soit par une évaluation au format appris :
+  « Niveau de priorité : MODÉRÉE (tri FRENCH 3B) », puis le motif, les éléments déterminants
+  avec le critère FRENCH cité, une explication, la conduite proposée et le rappel que l'IOA
+  décide.
++ *Les garde-fous* relisent l'évaluation. Chacun peut imposer un niveau plancher :
+  - *constantes* : seuils FRENCH de l'adulte sur SpO2, fréquences respiratoire et cardiaque,
+    pression artérielle, température, Glasgow et glycémie (une SpO2 sous 86 % impose le tri 1) ;
+  - *cohérence du critère cité* : si le modèle cite un critère de tri 2 mais annonce
+    MODÉRÉE, le niveau du critère l'emporte ;
+  - *drapeaux rouges* : 24 critères FRENCH de tri 1 ou 2 dits en langage courant (« douleur
+    qui serre la poitrine », « mon bras ne bouge plus d'un coup »), avec gestion des négations.
++ *Le niveau final* est le plus grave des propositions. S'il a été relevé, le message est
+  réécrit pour ne pas contredire le niveau affiché ; le texte du modèle reste dans le journal.
++ *Pendant le recueil*, un signe de gravité arrête les questions : évaluation MAXIMALE
+  immédiate.
++ *Après l'évaluation*, la session est close. Un signalement d'aggravation relance une
+  réévaluation par le modèle ; le niveau ne peut que monter.
++ *Si le modèle ne répond pas* (démarrage, panne), l'API relaie à l'IOA en 10 secondes au
+  plus, avec le plancher des constantes et des drapeaux rouges.
+
+== Du référentiel FRENCH aux trois niveaux de la mission
+#figure(caption: [Correspondance retenue entre le tri FRENCH et les niveaux demandés.],
+  table(columns: (auto, auto, 1fr),
+    [Tri FRENCH], [Niveau de la mission], [Conduite proposée par l'agent],
+    [1 et 2], [*MAXIMALE*], [salle des urgences vitales (tri 1) ou box sans délai (tri 2), avis médical immédiat],
+    [3A et 3B], [*MODÉRÉE*], [évaluation médicale rapide, réévaluation du patient en attendant],
+    [4 et 5], [*DIFFÉRÉE*], [prise en charge non urgente, en circuit court ou en consultation de médecine générale],
+  ),
+)
+
+Le tri FRENCH est conservé dans chaque réponse : il est plus fin que les trois niveaux et
+c'est la langue de l'IOA. Le choix de Qwen3-1.7B, imposé par la mission, est cohérent avec
+cette architecture : la sécurité ne repose pas sur la seule taille du modèle, et un petit
+modèle répond vite sur un GPU modeste (section 6).
 
 // ---------------------------------------------------------------- 3. Données
 = Données
