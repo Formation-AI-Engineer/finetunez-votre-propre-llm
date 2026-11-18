@@ -230,6 +230,10 @@ rattrapée chaque fois qu'un signe objectif est présent.]
   immédiate.
 + *Après l'évaluation*, la session est close. Un signalement d'aggravation relance une
   réévaluation par le modèle ; le niveau ne peut que monter.
++ *L'IOA peut transmettre sa saisie seule*, à tout moment et sans attendre le patient (bouton
+  « Transmettre »). Les garde-fous s'appliquent aussitôt, sans appel au modèle : une constante
+  critique donne MAXIMALE pendant le recueil, ou relève le niveau après l'évaluation. Sinon la
+  saisie est jointe au prochain message du patient.
 + *Si le modèle ne répond pas* (démarrage, panne), l'API relaie à l'IOA en 10 secondes au
   plus, avec le plancher des constantes et des drapeaux rouges.
 
