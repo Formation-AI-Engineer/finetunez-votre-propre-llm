@@ -31,37 +31,44 @@ HF = "https://huggingface.co"
 API = "https://camaralam--triage-chsa-api.us-east.modal.run"
 ACCESS = "Dépôts privés : accès sur demande."
 LINKS = {
-    1: f"""Dataset médical bilingue (Hugging Face Datasets / JSONL)
+    1: f"""# Dataset médical bilingue (Hugging Face Datasets / JSONL)
 
-Dépôt : {HF}/datasets/lcamara/triage-chsa
-Révision : 7dffce7d0494094a0197f67a3085d8823fdb6d9f
-Copie des fichiers : dossier donnees/ (configurations sft et dpo, splits train, validation, test)
-Construction : {REPO}/blob/main/scripts/build_dataset.py
-{ACCESS}
-Données désidentifiées, remises pour la seule évaluation du projet : ne pas diffuser.
+- Dépôt : [{HF}/datasets/lcamara/triage-chsa]({HF}/datasets/lcamara/triage-chsa)
+- Révision : `7dffce7d0494094a0197f67a3085d8823fdb6d9f`
+- Copie des fichiers : dossier `donnees/` (configurations `sft` et `dpo`, splits train,
+  validation, test)
+- Construction : [scripts/build_dataset.py]({REPO}/blob/main/scripts/build_dataset.py)
+
+{ACCESS} Données désidentifiées, remises pour la seule évaluation du projet : ne pas diffuser.
 """,
-    2: f"""Modèle Qwen3-1.7B-Base spécialisé : SFT avec LoRA, puis DPO
+    2: f"""# Modèle Qwen3-1.7B-Base spécialisé : SFT avec LoRA, puis DPO
 
-Poids finaux (fusionnés, servis par l'endpoint) : {HF}/lcamara/triage-chsa-qwen3-1.7b
-  révision 97e8679033fcfd24cdd28f9b4218127cbf9918f8
-Adaptateurs : {HF}/lcamara/triage-chsa-adapters
-  SFT sft-r16-lr2e-4, révision 8f0cbc488afe2dce1c12bb8952cd2507e3f38cae
-  DPO dpo-b0.1-lr3e-5, révision eb4703b855fb29f4f5a4699e4e81acd6fb2bc7d6
-Copie des adaptateurs : dossier adaptateurs/ (fusionner SFT puis DPO sur Qwen/Qwen3-1.7B-Base)
+- Poids finaux (fusionnés, servis par l'endpoint) :
+  [{HF}/lcamara/triage-chsa-qwen3-1.7b]({HF}/lcamara/triage-chsa-qwen3-1.7b),
+  révision `97e8679033fcfd24cdd28f9b4218127cbf9918f8`
+- Adaptateurs : [{HF}/lcamara/triage-chsa-adapters]({HF}/lcamara/triage-chsa-adapters)
+  - SFT `sft-r16-lr2e-4`, révision `8f0cbc488afe2dce1c12bb8952cd2507e3f38cae`
+  - DPO `dpo-b0.1-lr3e-5`, révision `eb4703b855fb29f4f5a4699e4e81acd6fb2bc7d6`
+- Copie des adaptateurs : dossier `adaptateurs/` (fusionner SFT puis DPO sur
+  `Qwen/Qwen3-1.7B-Base`)
+
 {ACCESS}
 """,
-    4: f"""Endpoint de démonstration (Modal, vLLM)
+    4: f"""# Endpoint de démonstration (Modal, vLLM)
 
-Page de démonstration : {API}/
-Documentation de l'API : {API}/docs
-Clés d'API et d'audit : transmises séparément.
+- Page de démonstration : [{API}/]({API}/)
+- Documentation de l'API : [{API}/docs]({API}/docs)
+- Clés d'API et d'audit : transmises séparément.
+
 Le modèle s'éteint après 5 minutes sans requête : bouton « Réveiller le modèle », 2 à 3 minutes.
 """,
-    5: f"""Pipeline CI/CD (GitHub Actions)
+    5: f"""# Pipeline CI/CD (GitHub Actions)
 
-Dépôt : {REPO}
-Workflow : {REPO}/blob/main/.github/workflows/ci.yml (copie : ci.yml)
-Exécutions : {REPO}/actions
+- Dépôt : [{REPO}]({REPO})
+- Workflow : [.github/workflows/ci.yml]({REPO}/blob/main/.github/workflows/ci.yml)
+  (copie : `ci.yml`)
+- Exécutions : [{REPO}/actions]({REPO}/actions)
+
 {ACCESS}
 """,
 }
@@ -77,7 +84,7 @@ def name(n: int, label: str) -> str:
 
 
 def links(n: int, label: str, folder: Path) -> None:
-    (folder / f"{name(n, label)}.txt").write_text(LINKS[n], encoding="utf-8")
+    (folder / f"{name(n, label)}.md").write_text(LINKS[n], encoding="utf-8")
 
 
 def main() -> None:
