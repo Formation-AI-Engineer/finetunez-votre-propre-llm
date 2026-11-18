@@ -29,3 +29,6 @@ livrables/*
 .idea/
 .vscode/
 .DS_Store
+
+# Rapport : PDF compilé depuis rapport/rapport.typ (copie finale dans livrables/)
+rapport/*.pdf
