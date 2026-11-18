@@ -6,6 +6,9 @@
 - `POST /api/v1/triage` : un tour de questionnaire (clé `X-API-Key`). Sans `session_id`, ouvre une
   session ; avec, la poursuit. La réponse est une question, une évaluation (niveau après
   garde-fous), ou un relais à l'IOA si le modèle est indisponible. Chaque tour est journalisé ;
+- `POST /api/v1/ioa` : saisie de l'IOA (âge, constantes, observation) transmise seule, sans
+  message du patient ni appel au modèle (clé `X-API-Key`). Les règles s'appliquent aussitôt et
+  peuvent relever le niveau ; la saisie est jointe au prochain message du patient. Journalisée ;
 - `GET /api/v1/audit` : consultation du journal (clé d'audit distincte `X-Audit-Key`).
 """
 
@@ -46,6 +49,15 @@ class TriageRequest(BaseModel):
     )
 
 
+class IOAContextRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    session_id: str | None = Field(None, max_length=64)
+    age_years: float | None = Field(None, ge=0, le=120)
+    vitals: Vitals | None = None
+    observation: str | None = Field(None, max_length=1000, description="observation de l'IOA")
+
+
 class GuardOut(BaseModel):
     name: str
     reason: str
@@ -81,7 +93,8 @@ def get_service() -> TriageService:
 def _check_key(given: str | None, expected: str, default: str) -> None:
     if settings.app_env != "dev" and expected == default:
         raise HTTPException(500, "Clé par défaut refusée hors développement.")
-    if given is None or not secrets.compare_digest(given, expected):
+    # En octets : une clé non ASCII (collée avec un accent) donnait une erreur 500, pas 401.
+    if given is None or not secrets.compare_digest(given.encode(), expected.encode()):
         raise HTTPException(401, "Clé absente ou invalide.")
 
 
@@ -132,6 +145,29 @@ def triage(
     except KeyError:
         raise HTTPException(404, "Session inconnue ou expirée.") from None
     audit.record(result, request.model_dump(mode="json", exclude_none=True))
+    return TriageResponse(**asdict(result))
+
+
+@app.post("/api/v1/ioa", response_model=TriageResponse, dependencies=[Depends(require_api_key)])
+def ioa_context(
+    request: IOAContextRequest,
+    service: Annotated[TriageService, Depends(get_service)],
+    audit: Annotated[AuditLog, Depends(get_audit)],
+) -> TriageResponse:
+    has_vitals = request.vitals is not None and request.vitals.model_dump(exclude_none=True)
+    has_note = request.observation is not None and request.observation.strip()
+    if request.age_years is None and not has_vitals and not has_note:
+        raise HTTPException(422, "Saisie vide : âge, constante ou observation attendue.")
+    try:
+        result = service.ioa_context(
+            session_id=request.session_id,
+            age_years=request.age_years,
+            vitals=request.vitals,
+            observation=request.observation,
+        )
+    except KeyError:
+        raise HTTPException(404, "Session inconnue ou expirée.") from None
+    audit.record(result, request.model_dump(mode="json", exclude_none=True), event="saisie_ioa")
     return TriageResponse(**asdict(result))
 
 

@@ -48,10 +48,12 @@ class AuditLog:
         self.path = Path(path)
         self._lock = threading.Lock()
 
-    def record(self, result: TriageResult, request: dict) -> None:
-        """`request` : message du patient, âge, constantes et observation de l'IOA."""
+    def record(self, result: TriageResult, request: dict, event: str = "message_patient") -> None:
+        """`request` : message du patient (absent pour une saisie de l'IOA transmise seule), âge,
+        constantes et observation de l'IOA."""
         entry = {
             "timestamp": datetime.now(UTC).isoformat(timespec="milliseconds"),
+            "event": event,
             **{
                 k: v
                 for k, v in asdict(result).items()
@@ -59,7 +61,7 @@ class AuditLog:
             },
             "age_years": request.get("age_years"),
             "vitals": request.get("vitals"),
-            "user_message": scrub(request["message"]),
+            "user_message": scrub(request["message"]) if request.get("message") else None,
             "observation": scrub(request["observation"]) if request.get("observation") else None,
             "answer": scrub(result.message),
             "model_answer": scrub(result.model_answer) if result.model_answer else None,

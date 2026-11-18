@@ -493,3 +493,104 @@ def test_reassessment_never_lowers_the_french_level_within_a_priority(client):
     out = api.post("/api/v1/triage", json=body).json()
     assert (out["priority"], out["french_level"]) == ("maximale", "1")
     assert [g["name"] for g in out["guards"]] == ["niveau_precedent"]
+
+
+# Saisie de l'IOA transmise seule (POST /api/v1/ioa), sans message du patient ni appel au modèle.
+
+
+def test_ioa_input_alone_is_recorded_then_joined_to_the_next_message(client):
+    api, service = client(QUESTION)
+    first = api.post("/api/v1/triage", json={"message": "J'ai mal au ventre."}).json()
+    sid = first["session_id"]
+    out = api.post(
+        "/api/v1/ioa",
+        json={
+            "session_id": sid,
+            "age_years": 70,
+            "vitals": {"temperature": 38.4},
+            "observation": "patient pâle",
+        },
+    ).json()
+    assert out["status"] == "saisie_ioa" and out["priority"] is None
+    assert out["message"].startswith("Saisie de l'IOA enregistrée") and out["turn"] == 1
+    assert len(service.model.calls) == 1  # pas d'appel au modèle
+    service.model.answers.append(QUESTION)
+    api.post("/api/v1/triage", json={"message": "Depuis hier.", "session_id": sid})
+    sent = service.model.calls[-1][-1]["content"]
+    assert "J'ai 70 ans." in sent and "T° 38,4 °C" in sent and "patient pâle" in sent
+    # Jointe une seule fois : le message suivant part sans elle.
+    service.model.answers.append(QUESTION)
+    api.post("/api/v1/triage", json={"message": "Non.", "session_id": sid})
+    assert "Constantes" not in service.model.calls[-1][-1]["content"]
+
+
+def test_critical_ioa_input_stops_the_questions_without_the_model(client):
+    api, service = client(QUESTION)
+    sid = api.post("/api/v1/triage", json={"message": "Je tousse."}).json()["session_id"]
+    out = api.post("/api/v1/ioa", json={"session_id": sid, "vitals": {"spo2": 84}}).json()
+    assert out["status"] == "evaluation" and out["priority"] == "maximale"
+    assert [g["name"] for g in out["guards"]] == ["constantes"]
+    assert "saisie de l'IOA" in out["message"] and len(service.model.calls) == 1
+    # Session close : un message ordinaire n'appelle pas le modèle.
+    after = api.post("/api/v1/triage", json={"message": "Merci.", "session_id": sid}).json()
+    assert after["status"] == "relais_ioa" and after["priority"] == "maximale"
+
+
+def test_ioa_input_opens_a_session_before_the_patient_speaks(client):
+    api, service = client()
+    # Les seuils de PA ne valent que pour l'adulte : l'âge fait partie de la saisie.
+    out = api.post("/api/v1/ioa", json={"age_years": 60, "vitals": {"systolic_bp": 70}}).json()
+    assert out["session_id"] and out["status"] == "evaluation" and out["priority"] == "maximale"
+    assert not service.model.calls
+
+
+def test_ioa_input_after_the_evaluation_can_raise_but_never_lower(client):
+    api, _ = client(evaluation("DIFFÉRÉE", "5"))
+    sid = _closed_session(api)
+    same = api.post("/api/v1/ioa", json={"session_id": sid, "vitals": {"heart_rate": 80}}).json()
+    assert same["status"] == "saisie_ioa" and same["priority"] == "differee"
+    assert "niveau inchangé (DIFFÉRÉE)" in same["message"]
+    raised = api.post("/api/v1/ioa", json={"session_id": sid, "vitals": {"spo2": 84}}).json()
+    assert raised["status"] == "evaluation" and raised["priority"] == "maximale"
+    assert raised["message"].startswith("Niveau de priorité : MAXIMALE")
+    assert "Niveau relevé par la saisie de l'IOA" in raised["message"]
+
+
+def test_ioa_input_red_flag_in_the_observation(client):
+    api, _ = client(evaluation("DIFFÉRÉE", "5"))
+    sid = _closed_session(api)
+    out = api.post(
+        "/api/v1/ioa", json={"session_id": sid, "observation": "mon bras ne bouge plus d'un coup"}
+    ).json()
+    assert out["status"] == "evaluation" and out["priority"] == "maximale"
+    assert [g["name"] for g in out["guards"]] == ["drapeau_rouge"]
+
+
+@pytest.mark.parametrize(
+    "body", [{}, {"vitals": {}}, {"observation": "  "}, {"vitals": {"spo2": 20}}, {"message": "x"}]
+)
+def test_empty_or_invalid_ioa_input_is_rejected(client, body):
+    api, _ = client()
+    assert api.post("/api/v1/ioa", json=body).status_code == 422
+
+
+def test_ioa_input_needs_the_key_and_a_known_session(client):
+    api, _ = client()
+    assert TestClient(main.app).post("/api/v1/ioa", json={"age_years": 30}).status_code == 401
+    unknown = api.post("/api/v1/ioa", json={"session_id": "nope", "age_years": 30})
+    assert unknown.status_code == 404
+
+
+def test_ioa_input_is_audited_as_its_own_event(client, tmp_path):
+    api, _ = client(QUESTION)
+    sid = api.post("/api/v1/triage", json={"message": "J'ai mal au ventre."}).json()["session_id"]
+    api.post("/api/v1/ioa", json={"session_id": sid, "observation": "vu par Mme Martin"})
+    rows = AuditLog(tmp_path / "audit.jsonl").read(sid)
+    assert [r["event"] for r in rows] == ["message_patient", "saisie_ioa"]
+    assert rows[1]["user_message"] is None and "Martin" not in rows[1]["observation"]
+
+
+def test_non_ascii_key_is_refused_not_a_server_error(client):
+    api, _ = client()
+    out = api.post("/api/v1/ioa", json={"age_years": 30}, headers={"X-API-Key": "clé".encode()})
+    assert out.status_code == 401
