@@ -293,4 +293,6 @@ l'environnement.
 - [Présentation technique guidée (SFT, DPO)](docs/PRESENTATION_TECHNIQUE.md)
 - [Notions clés à savoir](docs/NOTIONS_CLES.md)
 - [Plan du rapport](docs/PLAN_RAPPORT.md)
+- [Soutenance : réponses pour la discussion](docs/SOUTENANCE_QR.md)
+- Livrables à déposer : `uv run --no-project --with typst python scripts/build_livrables.py` (fichiers de liens, archive dans `livrables/`)
 - Points mentor : [écarts de l'énoncé](docs/POINT_MENTOR.md), [bilan de l'étape 1](docs/BILAN_MENTOR.md), [bilan des étapes 2 et 3](docs/BILAN_MENTOR_ETAPES_2_3.md)
