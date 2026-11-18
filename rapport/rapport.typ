@@ -43,6 +43,8 @@
 #show table.cell.where(y: 0): set text(weight: "bold")
 #show figure.caption: set text(8.5pt, fill: muted)
 #show figure.where(kind: table): set figure.caption(position: top)
+// Un grand tableau peut se poursuivre sur la page suivante plutôt que de laisser une page vide.
+#show figure.where(kind: table): set block(breakable: true)
 
 // Encadré « ce que cela change pour le CHSA », en tête de section.
 #let enjeu(body) = block(
@@ -558,13 +560,128 @@ démarrage à froid pour environ 600 à 800 \$ par mois.
 
 // ---------------------------------------------------------------- 9. Réglementaire
 = Cadre réglementaire
-#todo[RGPD et AIPD, hébergement HDS, AI Act (haut risque, annexe III), dispositif médical
-(règlement 2017/745).]
+#enjeu[Le POC n'a traité aucune donnée du CHSA et n'a aucun effet sur la prise en charge : il
+échappe à l'essentiel des obligations ci-dessous. Un usage réel, même comme simple aide, les
+déclencherait toutes. Elles conditionnent la feuille de route plus que la technique.]
+
+#figure(caption: [Obligations par texte : ce que fait le POC, ce qu'exigerait un usage réel.],
+  table(columns: (2.9cm, 1fr, 1.7fr),
+    [Texte], [Dans le POC], [Pour un usage réel au CHSA],
+    [*RGPD* (données de santé, art. 9)],
+    [Jeux publics réutilisés, minimisés et désidentifiés ; dépôts privés ; journal sans identifiant direct ; aucune donnée du CHSA.],
+    [Base légale : mission d'intérêt public (art. 6.1.e) et prise en charge sanitaire (art. 9.2.h). *Analyse d'impact (AIPD) obligatoire*, information des patients, durée de conservation du journal, avis du DPO. Réentraîner sur des dossiers du CHSA demande un cadre de recherche (méthodologie de référence de la CNIL ou autorisation).],
+    [*Hébergement de données de santé* (art. L.1111-8 du code de la santé publique)],
+    [Modal, aux États-Unis, *non certifié HDS* : acceptable pour des cas fictifs seulement.],
+    [Hébergeur *certifié HDS*, dans l'Union européenne, pour le modèle, l'API et le journal. Plusieurs hébergeurs français certifiés proposent des GPU. Aucun transfert hors UE.],
+    [*AI Act* (règlement 2024/1689)],
+    [Hors champ : démonstrateur sans mise en service.],
+    [Les systèmes de *triage des patients aux urgences* figurent à l'annexe III : *système à haut risque*. Gestion des risques, qualité des données, documentation technique, journalisation, transparence, *contrôle humain*, robustesse et cybersécurité ; enregistrement dans la base européenne.],
+    [*Dispositifs médicaux* (règlement 2017/745)],
+    [Pas un produit clinique ; aucune finalité médicale revendiquée.],
+    [Un logiciel qui propose un niveau de priorité aide une décision clinique : à qualifier avec le service juridique, probablement *classe IIa ou plus* (règle 11), donc marquage CE par un organisme notifié. L'exemption des dispositifs fabriqués et utilisés en interne (art. 5.5) est à étudier.],
+  ),
+)
+
+Plusieurs exigences sont déjà amorcées par l'architecture du POC, et le dossier de conformité
+pourra s'appuyer dessus :
+
+- *Contrôle humain* : le système ne décide jamais. Chaque réponse rappelle que l'IOA valide, et
+  les garde-fous ne peuvent que relever le niveau. Aucune décision n'est entièrement
+  automatisée (art. 22 du RGPD).
+- *Journalisation* : chaque échange est tracé, avec le niveau du modèle, celui retenu et les
+  garde-fous déclenchés. C'est ce que demandent l'audit médical et l'AI Act.
+- *Documentation et traçabilité des données* : révision de chaque source, empreintes,
+  journal de construction, révision fixe du modèle servi.
+- *Gestion des risques* : risques mesurés (sous-triage, réponses dangereuses), limites d'usage
+  écrites, surveillance outillée.
+
+Ce qui manque est surtout organisationnel : l'AIPD, l'hébergement HDS, le système de gestion
+de la qualité d'un fabricant de dispositif médical, et la validation clinique (section 10).
 
 // ---------------------------------------------------------------- 10. Go / no-go et roadmap
 = Go / no-go et feuille de route
-#todo[checklist et verdict ; roadmap en 3 phases avec conditions de passage ; coûts GPU d'un
-modèle 32B+ ; intégration FHIR.]
+#enjeu[La faisabilité technique est démontrée ; la valeur clinique ne l'est pas encore, faute
+de données réelles. Je recommande de poursuivre par étapes, chacune conditionnée par la
+précédente, en commençant par une expérimentation avec les IOA sur des cas fictifs.]
+
+== Verdict
+#figure(caption: [Décision par usage (`docs/GO_NO_GO.md`).],
+  table(columns: (1fr, auto, 1fr),
+    [Usage], [Décision], [Motif],
+    [Démonstration, soutenance, cas fictifs], [*GO*], [Seuils de pertinence et de latence tenus, IOA dans la boucle.],
+    [Expérimentation encadrée : simulation avec des IOA, sans patient], [*GO sous conditions*], [Voir ci-dessous.],
+    [Aide au triage de vrais patients], [*NO-GO*], [1 réponse dangereuse sur 29 cas neufs, données synthétiques, pas d'hébergement HDS ni de cadre réglementaire.],
+    [Modèle seul, sans les garde-fous], [*NO-GO*], [8 réponses dangereuses sur 29 ; il obéit à une injection.],
+  ),
+)
+
+*Conditions du go « expérimentation encadrée ».* Cas fictifs ou rejoués, jamais de donnée
+réelle ; une IOA valide chaque niveau, sans effet sur la prise en charge ; le modèle est
+réveillé avant la séance ; la surveillance est lancée après chaque séance et toute alerte est
+analysée ; le niveau de l'IOA est relevé à côté de celui du système, car cet écart est la
+seule mesure de la vraie performance.
+
+== Feuille de route
+#figure(caption: [Trois phases, chacune ouverte par la réussite de la précédente. Durées indicatives.],
+  table(columns: (3.3cm, 1.3fr, 1fr),
+    [Phase], [Travaux], [Condition pour passer à la suivante],
+    [*1. Expérimentation encadrée* \ 0 à 3 mois],
+    [Séances de simulation avec des IOA sur des cas fictifs et rejoués. Relecture clinique des vignettes et des drapeaux rouges par des soignants. Dialogues d'entraînement à plusieurs questions, pour un vrai questionnaire adaptatif. Comparaison de modèles de 7 à 32 milliards de paramètres sur le même protocole.],
+    [Concordance avec les IOA mesurée et jugée utile par l'équipe ; sous-triage des cas graves conforme au seuil sur les cas des séances ; AIPD lancée.],
+    [*2. Validation clinique et conformité* \ 3 à 12 mois],
+    [Hébergement HDS. Étude rétrospective sur des dossiers d'urgence désidentifiés du CHSA (motif, constantes, tri attribué par l'IOA), puis réentraînement sur ces données. Étude prospective *en silence* : le système tourne en parallèle des IOA, sans être montré. Qualification dispositif médical, dossier AI Act.],
+    [Sous-triage des cas graves ≤ 5 % avec une *borne haute* de l'intervalle sous 5 % (au moins 60 cas graves sans erreur, plusieurs centaines en pratique) ; avis favorable du DPO, de la commission médicale et du service juridique.],
+    [*3. Mise en production* \ 12 à 24 mois],
+    [Intégration au système d'information des urgences (FHIR). Authentification par utilisateur. Service disponible en permanence, sessions persistantes, plusieurs instances. Surveillance planifiée avec astreinte, procédure de retour arrière, réévaluation à chaque nouvelle révision du modèle.],
+    [Marquage CE ou exemption validée ; formation des IOA ; revue trimestrielle des indicateurs et des écarts IOA / système.],
+  ),
+)
+
+== Passage à un modèle de 32 milliards de paramètres ou plus
+La mission prévoit, en cas de succès, un modèle plus grand. Il devrait réduire les
+justifications inventées et mieux mener un questionnaire. Trois constats du POC cadrent ce
+choix :
+
+- *Le débit n'est pas la contrainte.* Un service d'urgences de 50 000 passages par an reçoit
+  environ 140 patients par jour, soit quelques requêtes par minute. Le POC tient 8,6 requêtes
+  par seconde sur un seul GPU A10. Un modèle plus grand tiendra aussi la charge ; c'est la
+  latence (seuil de 3 s) et la disponibilité 24 h sur 24 qui dimensionnent.
+- *Le coût est celui de la disponibilité permanente.* Un modèle de 32 milliards en 16 bits
+  occupe environ 64 Go : un GPU de 80 Go (de l'ordre de 3 à 4 \$ de l'heure chez un hébergeur
+  cloud, soit 2 200 à 2 900 \$ par mois en continu). Quantifié sur 4 bits, il tient sur un GPU
+  de 48 Go, pour environ la moitié. À comparer aux 600 à 800 \$ par mois du modèle actuel
+  allumé en permanence.
+- *Les données comptent plus que la taille.* Le modèle actuel échoue surtout hors des
+  gabarits de ses données d'entraînement. Un modèle plus grand entraîné sur les mêmes
+  vignettes en hériterait les limites : la phase 2 (données réelles) passe avant le changement
+  de taille, et le protocole de validation reste le même pour comparer.
+
+L'entraînement d'un tel modèle reste abordable : un fine-tuning LoRA sur données quantifiées
+tient sur un seul GPU de 80 Go pour quelques milliers d'exemples. Le pipeline actuel s'y
+transpose : changer de modèle revient à changer une révision.
+
+== Intégration au système d'information
+La mission demande que l'agent s'intègre au système d'information hospitalier. Le standard
+d'échange est *FHIR* (HL7), déjà porté par les éditeurs de dossiers patients. L'API actuelle
+s'y projette sans changer de logique :
+
+- l'entrée du patient au service (`Encounter`) ouvre la session ;
+- les constantes saisies par l'IOA arrivent en `Observation` ;
+- le questionnaire devient une `QuestionnaireResponse` ;
+- le niveau proposé, ses raisons et les garde-fous déclenchés deviennent une `RiskAssessment`,
+  que l'IOA valide ou corrige dans son outil habituel ;
+- le journal d'audit devient des `AuditEvent` et `Provenance` (qui a proposé, qui a validé).
+
+L'écart entre la proposition et la décision de l'IOA, enregistré pour chaque patient, est la
+donnée la plus précieuse pour améliorer le modèle et pour la surveillance.
+
+== Recommandations
++ *Lancer l'expérimentation encadrée avec les IOA*, sur des cas fictifs, en mesurant l'écart
+  entre leur niveau et celui du système.
++ *Constituer un jeu de données réelles* à partir des dossiers d'urgence du CHSA, dans un cadre
+  HDS et après AIPD : c'est la condition de toute amélioration significative.
++ *Garder l'architecture de sécurité* (garde-fous qui ne font que relever le niveau, IOA qui
+  décide, journal complet) quel que soit le modèle retenu ensuite.
 
 // ---------------------------------------------------------------- Références
 #heading(numbering: none)[Références]
