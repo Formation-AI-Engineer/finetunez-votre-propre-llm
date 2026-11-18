@@ -97,6 +97,7 @@ attendre 2 à 3 minutes. Pendant ce temps, l'API répond « relais IOA ». Les c
 | GET | `/api/v1/healthcheck` | aucune | l'API tourne |
 | GET | `/api/v1/readiness` | aucune | le modèle répond |
 | POST | `/api/v1/triage` | `X-API-Key` | un tour du questionnaire : question suivante ou évaluation |
+| POST | `/api/v1/ioa` | `X-API-Key` | saisie de l'IOA seule (âge, constantes, observation), sans appel au modèle |
 | GET | `/api/v1/audit` | `X-Audit-Key` | journal d'audit (clé distincte, 1 000 entrées au plus) |
 
 ```bash
@@ -115,6 +116,14 @@ garde-fous déclenchés (`guards`) et les alertes pour l'IOA (`alerts`).
 Après l'évaluation, la session est close. Un message envoyé avec `"aggravation": true` est
 réévalué par le modèle, et le niveau rendu ne peut que monter. Sans ce drapeau, un message ne
 peut relever le niveau que par les règles (constantes, drapeaux rouges).
+
+L'IOA peut aussi transmettre sa saisie seule, sans attendre un message du patient
+(`POST /api/v1/ioa`, mêmes champs `session_id`, `age_years`, `vitals`, `observation`). Sans
+`session_id`, une session s'ouvre. Les règles s'appliquent aussitôt, sans appel au modèle :
+pendant le questionnaire, un signe de tri 1 ou 2 donne une évaluation MAXIMALE ; après
+l'évaluation, le niveau peut monter, jamais baisser. Sinon la réponse a le statut `saisie_ioa`
+et la saisie est jointe au prochain message envoyé au modèle. Dans la page, c'est le bouton
+« Transmettre » du panneau « Saisie de l'IOA ».
 
 ## 4. Lancer le vrai modèle sur sa machine (GPU)
 
@@ -247,7 +256,7 @@ l'environnement.
 
 | Variable | Rôle | Par défaut |
 |---|---|---|
-| `API_KEY` | clé exigée par `POST /api/v1/triage` | `change-me` |
+| `API_KEY` | clé exigée par `POST /api/v1/triage` et `POST /api/v1/ioa` | `change-me` |
 | `AUDIT_API_KEY` | clé distincte pour `GET /api/v1/audit` | `change-me-audit` |
 | `VLLM_BASE_URL` | adresse du serveur vLLM (format OpenAI) | `http://localhost:8001/v1` |
 | `VLLM_API_KEY` | clé du serveur vLLM | vide |

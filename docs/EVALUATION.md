@@ -828,3 +828,34 @@ les drapeaux rouges, eux non plus, ne passent pas par le modèle.
 et le message en cours. Il retient le plus grave des deux planchers et l'annonce dans le
 message (« Niveau minimal : MAXIMALE (tri FRENCH 2), douleur thoracique typique… »). Sans signe
 de gravité, le relais reste sans niveau : l'IOA évalue.
+
+## Saisie de l'IOA transmise seule (18/11/2026)
+
+**Constat** : dans la page, les constantes saisies par l'IOA ne partaient qu'avec le prochain
+message du patient, par le bouton « Envoyer » de l'échange. Ce lien n'était pas visible, et il
+ne correspond pas au vrai circuit : l'IOA mesure les constantes de son côté, souvent pendant
+que le patient répond, et doit pouvoir les transmettre sans attendre.
+
+**Changement** : route `POST /api/v1/ioa` et bouton « Transmettre » dans le panneau de l'IOA.
+La saisie (âge, constantes, observation) est traitée **sans appel au modèle** :
+
+- pendant le questionnaire, un signe de tri 1 ou 2 (constante, ou drapeau rouge dans
+  l'observation ou le récit) donne une évaluation MAXIMALE tout de suite, sans autre question ;
+- après l'évaluation, le niveau peut monter (« Niveau relevé par la saisie de l'IOA »), jamais
+  baisser ;
+- sinon, réponse `saisie_ioa` (« Saisie de l'IOA enregistrée ») : la saisie est jointe une
+  seule fois au prochain message envoyé au modèle, au format de l'entraînement ;
+- sans session, la saisie en ouvre une : l'IOA peut saisir avant que le patient parle.
+
+Elle fonctionne aussi quand le modèle est éteint. Le journal d'audit la trace comme un
+événement distinct (`event` : `saisie_ioa`, contre `message_patient` pour un tour).
+Le modèle ne réévalue pas sur une saisie seule : seules les règles s'appliquent, comme pour un
+message ordinaire après l'évaluation. La réévaluation par le modèle reste réservée au
+signalement d'aggravation.
+
+**Défaut trouvé au passage** : une clé d'API contenant un caractère non ASCII faisait planter la
+comparaison (erreur 500 au lieu de 401). La comparaison se fait désormais sur les octets.
+
+Tests : 9 nouveaux (206 au total). Essai de bout en bout sur l'API locale avec le faux modèle :
+évaluation DIFFÉRÉE, puis saisie SpO2 85 % → MAXIMALE (tri 1), deux événements dans le journal.
+

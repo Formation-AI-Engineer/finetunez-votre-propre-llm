@@ -267,7 +267,7 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
     <section class="card">
       <div class="card-h">
         <div class="ico teal"><svg class="i"><use href="#i-clipboard"/></svg></div>
-        <div><h2>Saisie de l'IOA</h2><div class="sub">Facultatif · envoyée avec le prochain message</div></div>
+        <div><h2>Saisie de l'IOA</h2><div class="sub">Facultatif · bouton Transmettre, ou avec le prochain message</div></div>
       </div>
       <div class="grid2">
         <label>Âge <div class="field"><input id="age" type="number" min="0" max="120" step="1"><span class="unit">ans</span></div></label>
@@ -281,7 +281,8 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
         <label>Glycémie <div class="field"><input id="glycemia" type="number" min="0.5" max="60" step="0.1"><span class="unit">mmol/l</span></div></label>
       </div>
       <label style="margin-top: 10px">Observation <div class="field"><textarea id="observation" rows="2" maxlength="1000"></textarea></div></label>
-      <p class="hint">Renvoyée ensuite seulement si elle change.</p>
+      <button id="ioa" type="button" style="margin-top: 10px"><svg class="i"><use href="#i-send"/></svg>Transmettre</button>
+      <p class="hint">Les contrôles de sécurité s'appliquent aussitôt ; le modèle la reçoit avec le prochain message du patient.</p>
     </section>
 
     <section class="card">
@@ -383,9 +384,9 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
   function addMsg(who, text, tag, level) {
     const chat = $("chat");
     chat.querySelector(".welcome")?.remove();
-    const row = el("div", "row-msg " + who);
+    const row = el("div", "row-msg " + (who === "ioa" ? "agent" : who));
     const av = el("div", "avatar");
-    av.append(icon(who === "patient" ? "user" : "pulse"));
+    av.append(icon(who === "patient" ? "user" : who === "ioa" ? "nurse" : "pulse"));
     const b = el("div", "bubble" + (level ? " " + level : ""));
     if (tag) b.append(el("div", "tag", tag));
     b.append(document.createTextNode(text));
@@ -600,6 +601,69 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
     }
   }
 
+  // Saisie de l'IOA transmise seule : pas de message du patient ni d'appel au modèle.
+  const CTX_LABEL = { heart_rate: ["FC", "/min"], systolic_bp: ["PAS", " mmHg"],
+    diastolic_bp: ["PAD", " mmHg"], respiratory_rate: ["FR", "/min"], spo2: ["SpO2", " %"],
+    temperature: ["T°", " °C"], gcs: ["Glasgow", "/15"], glycemia: ["Glycémie", " mmol/l"] };
+
+  function summary(ctx) {
+    const parts = [];
+    if (ctx.age_years !== undefined) parts.push(ctx.age_years + " ans");
+    for (const [k, v] of Object.entries(ctx.vitals || {}))
+      parts.push(CTX_LABEL[k][0] + " " + String(v).replace(".", ",") + CTX_LABEL[k][1]);
+    let text = parts.join(" · ");
+    if (ctx.observation) text += (text ? "\n" : "") + "Observation : " + ctx.observation;
+    return text;
+  }
+
+  async function sendContext() {
+    $("err").textContent = "";
+    $("note").replaceChildren();
+    if (!$("apikey").value.trim()) {
+      $("err").textContent = "Saisissez la clé d'API (panneau Accès, en bas à droite).";
+      $("apikey").focus();
+      return;
+    }
+    const ctx = context();
+    const ctxKey = JSON.stringify(ctx);
+    if (!Object.keys(ctx).length) { $("err").textContent = "Saisie de l'IOA vide."; return; }
+    if (ctxKey === lastContext) { note("Saisie déjà transmise."); return; }
+    const body = Object.assign({}, ctx);
+    if (sessionId) body.session_id = sessionId;
+    $("ioa").disabled = true;
+    try {
+      const r = await fetch("api/v1/ioa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-API-Key": $("apikey").value.trim() },
+        body: JSON.stringify(body),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        const detail = typeof d.detail === "string" ? d.detail : "requête refusée";
+        $("err").textContent = "Erreur " + r.status + " : " + detail;
+        if (r.status === 404) reset();
+        return;
+      }
+      lastContext = ctxKey;
+      sessionId = d.session_id;
+      $("session").textContent = "Session " + sessionId;
+      addMsg("ioa", summary(ctx), "Saisie de l'IOA", "relais");
+      if (d.status === "evaluation") {
+        addMsg("agent", d.message, closed ? "Niveau relevé" : "Évaluation", d.priority);
+        showResult(d);
+        if (!closed) setClosed(true); else lockInput(true);
+        closedPriority = d.priority;
+      } else {
+        note(d.message);
+        if (d.priority || d.alerts.length) showResult(d);
+      }
+    } catch (e) {
+      $("err").textContent = "Réseau indisponible : " + e.message;
+    } finally {
+      $("ioa").disabled = false;
+    }
+  }
+
   function reset() {
     sessionId = null;
     lastContext = "";
@@ -678,6 +742,7 @@ td { padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: top
   $("worse").addEventListener("click", () => { lockInput(false); $("text").focus(); });
   $("wake").addEventListener("click", wake);
   $("audit").addEventListener("click", audit);
+  $("ioa").addEventListener("click", sendContext);
   setInterval(() => {
     if (lastModelAnswer && Date.now() - lastModelAnswer > IDLE_MS && !waking) {
       markAnswer(0);

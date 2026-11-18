@@ -35,6 +35,12 @@ Le niveau rendu ne peut que monter : un niveau plus bas que le précédent est i
 (garde-fou `niveau_precedent`). Si le modèle ne rend pas d'évaluation ou ne répond pas, ce sont
 les règles seules (constantes, drapeaux rouges) qui s'appliquent, comme avant. Au plus
 `MAX_REASSESSMENTS` réévaluations par session.
+
+Saisie de l'IOA (18/11/2026) : l'IOA transmet l'âge, les constantes ou une observation sans
+attendre un message du patient (`ioa_context`, sans appel au modèle). Les règles s'appliquent
+aussitôt : pendant le recueil, un signe de tri 1 ou 2 donne MAXIMALE sans autre question ; après
+l'évaluation, le niveau ne peut que monter. La saisie est ensuite jointe au prochain message
+envoyé au modèle, comme si elle était arrivée avec lui.
 """
 
 from __future__ import annotations
@@ -72,6 +78,8 @@ AFTER_EVALUATION = (
     "L'évaluation est terminée : l'infirmier ou l'infirmière d'accueil prend le relais. "
     "Signalez tout de suite à l'accueil si vos symptômes changent ou s'aggravent."
 )
+IOA_RECORDED = "Saisie de l'IOA enregistrée"
+IOA_LEAD = "Niveau relevé par la saisie de l'IOA"
 NON_STANDARD_FORMAT = "Évaluation au format non standard : niveau lu dans le texte du modèle"
 REFOCUS = (
     "Je ne peux pas répondre à cette demande. Pouvez-vous me décrire ce qui vous amène aux "
@@ -126,7 +134,7 @@ class Guard:
 @dataclass
 class TriageResult:
     session_id: str
-    status: Literal["question", "evaluation", "relais_ioa"]
+    status: Literal["question", "evaluation", "relais_ioa", "saisie_ioa"]
     message: str
     priority: PriorityLevel | None = None
     french_level: str | None = None
@@ -150,6 +158,8 @@ class Session:
     final: tuple[PriorityLevel, str | None] | None = None  # niveau rendu : session close
     story: list[str] = field(default_factory=list)  # messages du patient, bruts
     reassessments: int = 0
+    observation: str | None = None  # dernière observation transmise seule par l'IOA
+    context_pending: bool = False  # saisie de l'IOA pas encore vue par le modèle
 
 
 def _number(x: float) -> str:
@@ -236,6 +246,9 @@ class TriageService:
         sid, session = self._session(session_id)
         session.age_years = age_years if age_years is not None else session.age_years
         session.vitals = vitals if vitals is not None else session.vitals
+        if session.context_pending:  # saisie transmise seule : jointe à ce message
+            age_years, vitals = session.age_years, session.vitals
+            observation = observation or session.observation
         alerts = [a.reason for a in vital_alerts(session.vitals, session.age_years)]
         result = TriageResult(sid, "question", "", alerts=alerts, model_id=self.model.model_id)
 
@@ -259,6 +272,7 @@ class TriageService:
             session.messages.pop()
             return self._handover(result, session, "modèle indisponible", text)
         result.latency_ms = round((self.clock() - start) * 1000)
+        session.context_pending = False
         session.story.append(text.strip())
         session.messages.append({"role": "assistant", "content": answer})
         session.turns += 1
@@ -342,7 +356,12 @@ class TriageService:
             result.message = guarded_message(priority, level, result.guards)
 
     def _stop_on_severe_sign(
-        self, result: TriageResult, session: Session, answer: str, story: str
+        self,
+        result: TriageResult,
+        session: Session,
+        answer: str,
+        story: str,
+        lead: str = "Signe de gravité repéré, pas d'autre question",
     ) -> bool:
         """Le modèle pose une question alors qu'un signe de gravité est déjà là : évaluation
         MAXIMALE au niveau du signe le plus grave, message réécrit, question gardée pour l'audit."""
@@ -361,12 +380,53 @@ class TriageService:
         result.status = "evaluation"
         result.priority, result.french_level = "maximale", level
         result.guards = guards
-        result.model_answer = answer.strip()
-        result.message = guarded_message(
-            "maximale", level, guards, lead="Signe de gravité repéré, pas d'autre question"
-        )
+        result.model_answer = answer.strip() or None
+        result.message = guarded_message("maximale", level, guards, lead=lead)
         session.final = ("maximale", level)
         return True
+
+    def ioa_context(
+        self,
+        session_id: str | None = None,
+        age_years: float | None = None,
+        vitals: Vitals | None = None,
+        observation: str | None = None,
+    ) -> TriageResult:
+        """Saisie de l'IOA transmise seule (sans message du patient ni appel au modèle). Les
+        règles s'appliquent tout de suite ; la saisie est jointe au prochain message du patient."""
+        sid, session = self._session(session_id)
+        session.age_years = age_years if age_years is not None else session.age_years
+        session.vitals = vitals if vitals is not None else session.vitals
+        if observation and observation.strip():
+            session.observation = observation.strip()
+        session.context_pending = True
+        alerts = [a.reason for a in vital_alerts(session.vitals, session.age_years)]
+        result = TriageResult(
+            sid, "saisie_ioa", "", alerts=alerts, turn=session.turns, model_id=self.model.model_id
+        )
+        note = observation.strip() if observation else ""
+        if session.final is None:
+            story = " ".join([*session.story, note])
+            lead = "Signe de gravité dans la saisie de l'IOA, pas d'autre question"
+            if self._stop_on_severe_sign(result, session, "", story, lead=lead):
+                return result
+            result.message = f"{IOA_RECORDED} : elle sera prise en compte dans l'évaluation."
+            if hit := red_flag_floor(story, session.age_years):
+                result.alerts.append(
+                    f"Drapeau rouge : {hit.name} (« {hit.excerpt} »), {hit.motif}, tri {hit.level}"
+                )
+            return result
+        self._after_evaluation(result, session, note)
+        if result.guards:  # niveau relevé
+            result.status = "evaluation"
+            result.message = guarded_message(
+                result.priority, result.french_level, result.guards, lead=IOA_LEAD
+            )
+        else:
+            result.status = "saisie_ioa"
+            label = PRIORITY_LABEL[result.priority]
+            result.message = f"{IOA_RECORDED} : niveau inchangé ({label})."
+        return result
 
     def _reassess(
         self, result: TriageResult, session: Session, text: str, observation: str | None
@@ -384,6 +444,7 @@ class TriageService:
         except ModelUnavailable:
             return self._after_evaluation(result, session, text)
         result.latency_ms = round((self.clock() - start) * 1000)
+        session.context_pending = False
         session.reassessments += 1
         session.turns += 1
         result.turn = session.turns
