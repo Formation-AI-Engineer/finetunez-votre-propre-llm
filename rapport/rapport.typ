@@ -602,7 +602,7 @@ les modifications du 16/11.
 // ---------------------------------------------------------------- 7. Échecs et limites
 = Échecs et limites
 #enjeu[Les tests sur le service réel et l'essai de la démonstration ont révélé neuf défauts
-que les 193 tests automatiques ne voyaient pas. Tous sont corrigés ; ils montrent pourquoi un
+que les 206 tests automatiques ne voyaient pas. Tous sont corrigés ; ils montrent pourquoi un
 essai en conditions réelles, avec des IOA, doit précéder tout usage.]
 
 == Défauts trouvés en conditions réelles
@@ -679,7 +679,7 @@ conforme aux données de santé : c'est un environnement de démonstration.]
 #figure(caption: [Pipeline GitHub Actions (`.github/workflows/ci.yml`).],
   table(columns: (auto, auto, 1fr),
     [Étape], [Quand], [Contenu],
-    [Qualité], [chaque push et PR], [Lint, format, 193 tests unitaires (sans GPU ni réseau).],
+    [Qualité], [chaque push et PR], [Lint, format, 206 tests unitaires (sans GPU ni réseau).],
     [Image], [chaque push et PR], [Construction de l'image de l'API ; test sans modèle (relais IOA attendu) ; test avec un faux vLLM qui répond DIFFÉRÉE à une douleur thoracique (garde-fou, message réécrit, audit, page servie).],
     [Publication], [`main`], [Image publiée sur le registre GitHub.],
     [Déploiement], [`main`], [Déploiement sur Modal, puis vérification de l'API en ligne.],
