@@ -112,27 +112,27 @@ Presidio. Les âges, durées, lieux et constantes sont gardés, car utiles au tr
 
 ## Points à valider avec le mentor
 
-Le premier point conditionne l'entraînement : les vignettes synthétiques sont la seule source de
-triage du projet.
+Plus de mentor : chaque point a été tranché et documenté (`docs/DECISIONS.md`, « Points du
+4 novembre », et les documents cités).
 
-- [ ] **Vignettes synthétiques** : l'approche par règles dérivées de FRENCH est-elle acceptée ? Un
-      soignant pourrait-il relire un échantillon ?
-- [ ] **Correspondance FRENCH → 3 niveaux** (1-2 maximale, 3A-3B modérée, 4-5 différée) :
-      est-elle pertinente ?
-- [ ] **Seuils sur les constantes** (SpO2, Glasgow, pouls, tension, fréquence respiratoire,
-      température) : sont-ils raisonnables ?
-- [ ] **Paires DPO** : UltraMedical est en anglais et jugé surtout par un modèle. Avec 300 paires
-      de triage en français en plus, cette limite documentée suffit-elle ?
-- [ ] **Seuils d'acceptation** de l'étape 2 : les valeurs proposées dans `docs/TACHES.md`
-      sont-elles réalistes ? Un no-go argumenté est-il acceptable ?
-- [ ] **Périmètre** : un questionnaire adaptatif simple dans l'API et une intégration au SI
-      décrite (FHIR) sans mise en œuvre suffisent-ils ?
-- [ ] **Dataset** : un dépôt privé partagé suffit-il, ou faut-il le rendre public ? (Il ne
-      contient que des données désidentifiées.)
-- [ ] **Endpoint** : doit-il rester en ligne après la soutenance ? Un GPU allumé en continu coûte
-      cher.
-- [ ] **Hébergement HDS** : attendu pour le POC, ou seulement dans la roadmap, faute de données
-      réelles ?
+- [x] **Vignettes synthétiques** : approche par règles dérivées de FRENCH conservée, acceptée
+      comme limite signalée partout. Aucune relecture par un soignant n'a pu être organisée.
+- [x] **Correspondance FRENCH → 3 niveaux** : conservée (1-2 maximale, 3A-3B modérée,
+      4-5 différée).
+- [x] **Seuils sur les constantes** : ceux du référentiel FRENCH chez l'adulte
+      (`src/triage/rules.py`).
+- [x] **Paires DPO** : UltraMedical gardé avec les paires de triage en français, limite
+      documentée. Le français n'a pas régressé (`docs/EVALUATION.md`).
+- [x] **Seuils d'acceptation** : sous-triage maximale ≤ 5 %, exactitude ≥ 75 %, sur-triage ≤ 20 %,
+      0 réponse dangereuse, latence p95 ≤ 3 s. Les trois seuils de triage sont atteints sur le test.
+- [x] **Périmètre** : questionnaire adaptatif dans l'API (`POST /api/v1/triage`), intégration
+      FHIR au SI décrite dans la roadmap, sans mise en œuvre.
+- [x] **Dataset** : dépôt privé, accès donné au jury sur demande (`docs/DECISIONS.md` § 8,
+      `docs/RGPD.md`).
+- [x] **Endpoint** : arrêt après 5 min d'inactivité, démarré avant la soutenance puis arrêté
+      (`docs/GO_NO_GO.md`).
+- [x] **Hébergement HDS** : dans la roadmap seulement. Modal n'est pas certifié HDS, d'où le
+      no-go pour un usage réel (`docs/GO_NO_GO.md`).
 
 ## Prochaines étapes
 
