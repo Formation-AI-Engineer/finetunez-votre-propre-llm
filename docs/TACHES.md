@@ -3,7 +3,7 @@
 Référence : énoncé OpenClassrooms (`docs/enonce/`). Durée prévue : 4 semaines, 80 heures.
 Branche de travail : `dev`. Fusion vers `main` à chaque étape validée.
 
-Légende : `[x]` fait · `[ ]` à faire · `[~]` en cours · **(ajout)** : absent de l'énoncé, mais
+Légende : `[x]` fait · `[ ]` à faire · `[~]` en cours · `[-]` sans objet · **(ajout)** : absent de l'énoncé, mais
 nécessaire d'après l'analyse (voir `docs/POINT_MENTOR.md`).
 
 Vue d'ensemble :
@@ -43,14 +43,14 @@ Plus rien ne bloque l'étape 1.
       (le dépôt est privé)
 - [x] Lancer le notebook Kaggle et me transmettre la sortie de la dernière cellule
 
-### Avec le mentor
-- [ ] Passer en revue `docs/POINT_MENTOR.md`, en commençant par les données de triage synthétiques
-- [ ] Faire valider les seuils d'acceptation et la correspondance FRENCH vers les 3 niveaux
+### Avec le mentor (sans objet : plus de mentor, choix tranchés dans `docs/DECISIONS.md`)
+- [-] Passer en revue `docs/POINT_MENTOR.md`, en commençant par les données de triage synthétiques
+- [-] Faire valider les seuils d'acceptation et la correspondance FRENCH vers les 3 niveaux
 
-### Pour l'étape 4
+### Pour l'étape 4 ✅
 - [x] Fournisseur de la démonstration : Modal (30 $ de crédits par mois, facturé seulement à l'usage)
-- [ ] Compte Modal, avec un plafond de dépenses s'il demande une carte bancaire
-- [ ] Jeton Hugging Face Read (ou *fine-grained* limité au dépôt du modèle) pour l'endpoint
+- [x] Compte Modal, avec un plafond de dépenses s'il demande une carte bancaire
+- [x] Jeton Hugging Face Read (ou *fine-grained* limité au dépôt du modèle) pour l'endpoint
 
 ---
 
@@ -67,19 +67,20 @@ Plus rien ne bloque l'étape 1.
 
 ---
 
-## Étape 0 – Cours et cadrage
+## Étape 0 – Cours et cadrage ✅
 
 **À la fin :** vous savez expliquer SFT, LoRA et DPO, et le périmètre est validé par le mentor.
 
-- [ ] Lire `docs/NOTIONS_CLES.md`, puis les sections conseillées des cours
-- [ ] Lire l'article du JAMA cité dans la mission (résumé dans `docs/NOTIONS_CLES.md`)
-- [ ] Parcourir le référentiel FRENCH de la SFMU **(ajout)**
-- [ ] Passer en revue `docs/POINT_MENTOR.md` en session de mentorat
-- [ ] Valider le périmètre de l'agent : questionnaire adaptatif, intégration au SI
+- [x] Lire `docs/NOTIONS_CLES.md`, puis les sections conseillées des cours
+- [x] Lire l'article du JAMA cité dans la mission (résumé dans `docs/NOTIONS_CLES.md`)
+- [x] Parcourir le référentiel FRENCH de la SFMU **(ajout)**
+- [-] Passer en revue `docs/POINT_MENTOR.md` en session de mentorat (plus de mentor)
+- [x] Valider le périmètre de l'agent : questionnaire adaptatif, intégration au SI (tranché sans
+      mentor, voir `docs/DECISIONS.md`)
 
 ---
 
-## Étape 1 – Collecter et structurer les données (semaine 1)
+## Étape 1 – Collecter et structurer les données (semaine 1) ✅
 
 **À la fin :** dataset anonymisé, versionné, avec schéma de métadonnées et justification RGPD.
 
@@ -142,7 +143,7 @@ Plus rien ne bloque l'étape 1.
 
 ---
 
-## Étape 2 – Fine-tuning supervisé avec LoRA (semaine 2)
+## Étape 2 – Fine-tuning supervisé avec LoRA (semaine 2) ✅
 
 **À la fin :** adaptateur SFT reproductible, métriques documentées, comparaison avec le modèle de base.
 
@@ -213,7 +214,7 @@ Plus rien ne bloque l'étape 1.
 
 ---
 
-## Étape 3 – Alignement par préférences DPO (semaine 3)
+## Étape 3 – Alignement par préférences DPO (semaine 3) ✅
 
 **À la fin :** modèle aligné, gain mesuré par rapport au SFT seul, poids finaux disponibles.
 
@@ -251,11 +252,11 @@ Plus rien ne bloque l'étape 1.
 - [x] Évaluation unique sur le jeu de test (`docs/EVALUATION.md`) : système décidé 1/84 cas
       maximale manqués (1,2 %), exactitude 86,5 %, sur-triage 12 %, les trois seuils atteints ;
       avec les drapeaux rouges 0/84 (borne haute 4,4 %) et 14,5 % de sur-triage
-- [ ] GRPO : facultatif, à ne traiter que s'il reste du temps
+- [-] GRPO : facultatif, écarté (non traité)
 
 ---
 
-## Étape 4 – Déployer et valider le POC (semaine 4)
+## Étape 4 – Déployer et valider le POC (semaine 4) ✅
 
 **À la fin :** endpoint accessible, déploiement automatisé, tests de latence et d'audit réalisés.
 
@@ -341,16 +342,18 @@ Plus rien ne bloque l'étape 1.
 
 **À la fin :** archive déposée et présentation répétée dans les temps.
 
-### Rapport (PDF, 20 pages maximum)
-- [ ] Méthodologie : données, entraînement, validation
-- [ ] Métriques : latence, pertinence, sécurité, infrastructure
-- [ ] Analyse des résultats, y compris les échecs et les limites
-- [ ] Cadre réglementaire : RGPD, hébergement de données de santé, AI Act, dispositif médical
-- [ ] Roadmap : validation clinique, modèles 32B+, données étendues, intégration FHIR au SI
+### Rapport (PDF, 20 pages maximum) ✅
+- [x] Méthodologie : données, entraînement, validation
+- [x] Métriques : latence, pertinence, sécurité, infrastructure
+- [x] Analyse des résultats, y compris les échecs et les limites
+- [x] Cadre réglementaire : RGPD, hébergement de données de santé, AI Act, dispositif médical
+- [x] Roadmap : validation clinique, modèles 32B+, données étendues, intégration FHIR au SI
 
 ### Dépôt
-- [ ] Livrables nommés `Nom_Prenom_n°_nom_mmaaaa` (mois de démarrage, 102026 si le projet démarre
+- [x] Livrables nommés `Nom_Prenom_n°_nom_mmaaaa` (mois de démarrage, 102026 si le projet démarre
       en octobre 2026), dans une archive `Titre_du_projet_nom_prenom.zip`
+      (`livrables/Finetunez_votre_propre_LLM_CAMARA_Lamine.zip`)
+- [ ] Archive déposée sur la plateforme OpenClassrooms
 
 | N° | Livrable | Forme |
 |---|---|---|
